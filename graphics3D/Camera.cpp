@@ -1,12 +1,11 @@
 #include "Camera.h"
-#include "Gizmos.h"
 
 using namespace glm;
 
 Camera::Camera()
 {
-   m_viewTransform = glm::lookAt(vec3(10), vec3(0), vec3(0, 1, 0));
-   m_projectionTransform = glm::perspective(glm::pi<float>() * 0.25f, 16.0f / 9.0f, 0.1f, 1000.0f);
+   setLookAt(vec3(10), vec3(0), vec3(0, 1, 0));
+   setPerspective(glm::pi<float>() * 0.25f, 16.0f / 9.0f, 0.1f, 1000.0f);
 }
 
 Camera::~Camera()
@@ -14,24 +13,36 @@ Camera::~Camera()
 
 
 void Camera::updateProjectionView()
-{}
+{
+   m_projectionView = m_projectionMatrix * m_viewMatrix;
+}
 
 void Camera::draw()
 {
+   updateProjectionView();
    aie::Gizmos::draw(m_projectionView);
 }
 
-void Camera::setPerspective(float fieldOfView, float aspectRatio, float, float)
+void Camera::setPerspective(float fieldOfView, float aspectRatio,float near = 0.1f, float far = 1000.f)
 {
-
+   m_projectionMatrix = perspective(fieldOfView,
+                           aspectRatio,
+                           near, far);
 }
 
 void Camera::setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up)
 {
-   m_worldTransform = lookAt(from, to, up);
+   m_viewMatrix = lookAt(from, to, up);
+   m_worldTransform = inverse(m_viewMatrix);
 }
 
 void Camera::setPosition(glm::vec3 position)
 {
-   m_worldTransform = translate(m_worldTransform, position);
+   m_worldTransform = translate(mat4(0), position);
+   m_viewMatrix = inverse(m_worldTransform);
+}
+
+glm::mat4 Camera::getProjectionView()
+{
+   return m_projectionView;
 }

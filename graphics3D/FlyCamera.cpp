@@ -1,12 +1,12 @@
 #include "FlyCamera.h"
 #include "Input.h"
 
-
+using namespace glm;
 
 FlyCamera::FlyCamera()
 {
+   m_up = { 0,1,0 };
 }
-
 
 FlyCamera::~FlyCamera()
 {}
@@ -14,8 +14,8 @@ FlyCamera::~FlyCamera()
 void FlyCamera::update(float deltaTime)
 {
    aie::Input* input = aie::Input::getInstance();
-   glm::vec3 deltaTranslate;
-   glm::vec3 deltaMouse;
+   glm::vec3 deltaTranslate = vec3(0);
+   glm::vec3 deltaMouse = vec3(0);
 
    //horizontal movement
    if (input->isKeyDown(aie::INPUT_KEY_W))
@@ -41,8 +41,8 @@ void FlyCamera::update(float deltaTime)
    //float deltaRX = deltaMouseY * m_mouseSensitivity * deltaTime;
 
 
-
    m_worldTransform = glm::translate(m_worldTransform, deltaTranslate);
+   m_viewMatrix = glm::inverse(m_worldTransform);
 }
 
 void FlyCamera::setSpeed(float spd)

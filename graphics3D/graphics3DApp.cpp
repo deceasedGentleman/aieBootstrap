@@ -11,7 +11,7 @@ using glm::mat4;
 using aie::Gizmos;
 
 graphics3DApp::graphics3DApp() {
-
+   m_camera = new FlyCamera();
 }
 
 graphics3DApp::~graphics3DApp() {
@@ -25,7 +25,7 @@ bool graphics3DApp::startup() {
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
 
-   m_camera = new FlyCamera();
+   
 
 	return true;
 }
@@ -60,6 +60,8 @@ void graphics3DApp::update(float deltaTime) {
 
 	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
 		quit();
+
+   m_camera->update(deltaTime);
 }
 
 void graphics3DApp::draw() {
@@ -67,9 +69,10 @@ void graphics3DApp::draw() {
 	// wipe the screen to the background colour
 	clearScreen();
 
-   
-	// update perspective based on screen size
-	
+   // update perspective in case window resized
+   m_camera->setPerspective(glm::pi<float>() * 0.25f,
+                            (float)getWindowWidth() / (float)getWindowHeight(),
+                            0.1f, 1000.f);
 
-	Gizmos::draw(m_camera);
+   m_camera->draw();
 }
