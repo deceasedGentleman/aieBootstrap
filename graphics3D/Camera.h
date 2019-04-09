@@ -15,6 +15,7 @@ public:
    virtual void draw();
 
    void setPerspective(float fieldOfView, float aspectRatio, float near, float far);
+   void updateWorldTransform();
    void setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up);
    void setPosition(glm::vec3 position);
 

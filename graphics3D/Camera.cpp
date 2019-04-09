@@ -23,17 +23,22 @@ void Camera::draw()
    aie::Gizmos::draw(m_projectionView);
 }
 
-void Camera::setPerspective(float fieldOfView, float aspectRatio,float near = 0.1f, float far = 1000.f)
+void Camera::setPerspective(float FOV, float aspectRatio,float near = 0.1f, float far = 1000.f)
 {
-   m_projectionMatrix = perspective(fieldOfView,
+   m_projectionMatrix = perspective(FOV,
                            aspectRatio,
                            near, far);
+}
+
+void Camera::updateWorldTransform()
+{
+   m_worldTransform = inverse(m_viewMatrix);
 }
 
 void Camera::setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up)
 {
    m_viewMatrix = lookAt(from, to, up);
-   m_worldTransform = inverse(m_viewMatrix);
+   updateWorldTransform();
 }
 
 void Camera::setPosition(glm::vec3 position)
