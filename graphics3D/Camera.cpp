@@ -5,7 +5,7 @@ using namespace glm;
 Camera::Camera()
 {
    setLookAt(vec3(10), vec3(0), vec3(0, 1, 0));
-   setPerspective(glm::pi<float>() * 0.25f, 16.0f / 9.0f, 0.1f, 1000.0f);
+   setPerspective(radians(45.0f), 16.0f / 9.0f, 0.1f, 1000.0f);
 }
 
 Camera::~Camera()
@@ -23,7 +23,7 @@ void Camera::draw()
    aie::Gizmos::draw(m_projectionView);
 }
 
-void Camera::setPerspective(float FOV, float aspectRatio,float near = 0.1f, float far = 1000.f)
+void Camera::setPerspective(float FOV, float aspectRatio, float near = 0.1f, float far = 1000.f)
 {
    m_projectionMatrix = perspective(FOV,
                            aspectRatio,
@@ -35,7 +35,7 @@ void Camera::updateWorldTransform()
    m_worldTransform = inverse(m_viewMatrix);
 }
 
-void Camera::setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up)
+void Camera::setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up = { 0,1,0 })
 {
    m_viewMatrix = lookAt(from, to, up);
    updateWorldTransform();
