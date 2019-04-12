@@ -11,8 +11,6 @@ public:
    void setSpeed(float speed);
    void setClamp(float clampAngle);
 
-   void setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up = { 0,1,0 });
-
 private:
    glm::vec3 m_up;
 

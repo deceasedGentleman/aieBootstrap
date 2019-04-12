@@ -27,11 +27,9 @@ void FlyCamera::update(float deltaTime)
       moveVector.x += 1;
 
    moveVector *= m_moveSpeed;
-
-   moveVector = 
    //vertical movement 
-   if (input->isKeyDown(aie::INPUT_KEY_SPACE))
-   if (input->isKeyDown(aie::INPUT_KEY_LEFT_SHIFT))
+   //if (input->isKeyDown(aie::INPUT_KEY_SPACE))
+   //if (input->isKeyDown(aie::INPUT_KEY_LEFT_SHIFT))
 
    //rotation
    /*
@@ -43,9 +41,8 @@ void FlyCamera::update(float deltaTime)
    float deltaRX = deltaMouseY * m_mouseSensitivity * deltaTime;
    */
 
-   m_worldTransform = glm::translate(mat4(), moveVector * deltaTime);
    
-   m_viewMatrix = glm::inverse(m_worldTransform);
+   m_viewMatrix = glm::lookAt(m_position, m_direction, m_up);
 }
 
 void FlyCamera::setSpeed(float spd)
@@ -58,9 +55,3 @@ void FlyCamera::setClamp(float clampAngle)
    m_clampAngle = clampAngle; 
 }
 
-void FlyCamera::setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up = { 0,1,0 })
-{
-   m_viewMatrix = lookAt(from, to, up);
-   m_up = up;
-   updateWorldTransform();
-}
