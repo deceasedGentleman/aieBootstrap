@@ -11,7 +11,7 @@ using glm::mat4;
 using aie::Gizmos;
 
 graphics3DApp::graphics3DApp() {
-   m_camera = new FlyCamera();
+  
 }
 
 graphics3DApp::~graphics3DApp() {
@@ -20,13 +20,15 @@ graphics3DApp::~graphics3DApp() {
 
 bool graphics3DApp::startup() {
 	
+   m_camera = new FlyCamera(glm::pi<float>() * 0.25f,
+                           16 / 9,
+                           vec3(10), vec3(0), vec3(0, 1, 0));
+   setShowCursor(false);
+
 	setBackgroundColour(0.25f, 0.25f, 0.25f);
 
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
-
-   
-
 	return true;
 }
 
@@ -51,7 +53,8 @@ void graphics3DApp::update(float deltaTime) {
 						vec3(-10, 0, -10 + i),
 						i == 10 ? white : black);
 	}
-
+   glm::vec2 windowCentre = { getWindowWidth()/2, getWindowHeight()/2 };
+   Gizmos::add2DAABB(windowCentre, { 4,4 }, { 1,1,1,1 });
 	// add a transform so that we can see the axis
 	Gizmos::addTransform(mat4(1));
 
@@ -74,5 +77,8 @@ void graphics3DApp::draw() {
                             (float)getWindowWidth() / (float)getWindowHeight(),
                             0.1f, 1000.f);
 
+   //draw 3D gizmos using the camera class
    m_camera->draw();
+   // draw 2D gizmos using an orthogonal projection matrix (or screen dimensions)
+   Gizmos::draw2D((float)getWindowWidth(), (float)getWindowHeight());
 }
