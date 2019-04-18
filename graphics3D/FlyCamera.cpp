@@ -65,8 +65,9 @@ void FlyCamera::MouseLook(float deltaTime, aie::Input * input)
    float deltaY = clamp((float)deltaMY, -10.0f, 10.0f) * m_MouseSensitivity * deltaTime;
 
    glm::mat4 rotation(1.0f);
+   //note: figure out why camera is tilted, it's really starting to bug me
    rotation = glm::rotate(rotation, deltaY, getRow(0));
-   rotation = glm::rotate(rotation, deltaX, { 0,1,0 });
+   rotation = glm::rotate(rotation, -deltaX, { 0,1,0 });
    currentTransform = rotation * currentTransform;
 
    currentTransform[3] = vec4(getPosition(), 1);

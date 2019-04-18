@@ -62,10 +62,12 @@ void graphics3DApp::update(float deltaTime)
                   vec3(-10, 0, -10 + i),
                   i == 10 ? white : black);
    }
+
+   //draw a cross in the center of the screen
    glm::vec2 mid = { getWindowWidth() / 2, getWindowHeight() / 2 };
    float l = 4.0f;
-   Gizmos::add2DAABB(mid, vec2(l), vec4(1));
-   Gizmos::add2DLine(vec2(mid.x + 4, mid.y), vec2(mid.x - 4, mid.y), vec4(1));
+   Gizmos::add2DLine(vec2(mid.x + l, mid.y), vec2(mid.x - l -1, mid.y), vec4(1));
+   Gizmos::add2DLine(vec2(mid.x, mid.y + l), vec2(mid.x, mid.y - l -1), vec4(1));
 
    // add a transform so that we can see the axis
    Gizmos::addTransform(mat4(1));
