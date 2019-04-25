@@ -1,15 +1,18 @@
 #include "FlyCamera.h"
 #include "Input.h"
 
-using namespace glm;
+
+
 
 FlyCamera::FlyCamera()
 {}
 
-FlyCamera::FlyCamera(float FOV, float AR, glm::vec3 pos, glm::vec3 lookTo, glm::vec3 up):
-   Camera(FOV, AR, pos, lookTo, up)
+FlyCamera::FlyCamera(float FOV, float AR, glm::vec3 pos, float VAngle, float HAngle) :
+   m_up(0, 1, 0),
+   m_XAngle(VAngle),
+   m_YAngle(HAngle)
 {
-   m_up = up;
+   setPerspective(FOV, AR);
    
 }
 
@@ -19,59 +22,59 @@ FlyCamera::~FlyCamera()
 void FlyCamera::update(float deltaTime)
 {
    aie::Input* input = aie::Input::getInstance();
-   MouseLook(deltaTime, input);
-   WASDMove(deltaTime, input);
-}
-
-void FlyCamera::WASDMove(float deltaTime, aie::Input * input)
-{
    
-   mat4 currentTransform = getWorldTransform();
-   vec3 left = currentTransform[0];
-   currentTransform[1] = vec4(m_up, 0);
-   vec3 forward = currentTransform[2];
-   vec3 currentPos = currentTransform[3];
+   //retrive mouse input
+   double mouseDeltaX = input->getMouseDeltaX();
+   double mouseDeltaY = input->getMouseDeltaY();
+
+   //invert input if needed
+   mouseDeltaX = -mouseDeltaX;
+
+   m_YAngle += (float)mouseDeltaX * m_MouseSensitivity * deltaTime;
+   m_XAngle += (float)mouseDeltaY * m_MouseSensitivity * deltaTime;
+
+   glm::clamp(m_XAngle, m_clampAngle, -m_clampAngle);
+
+   // Direction : Spherical coordinates to Cartesian coordinates conversion
+   glm::vec3 direction(
+      cos(m_XAngle) * sin(m_YAngle),
+      sin(m_XAngle),
+      cos(m_XAngle) * cos(m_YAngle)
+   );
+
+   // Right vector
+   glm::vec3 right = glm::vec3(
+      sin(m_YAngle - 3.14f / 2.0f),
+      0,
+      cos(m_YAngle - 3.14f / 2.0f)
+   );
+
+   // New Up vector
+   glm::vec3 up = glm::cross(right, direction);
+   //m_up = up;
+
+   glm::vec3 position = getPosition();
+
+
    //horizontal movement
    if (input->isKeyDown(aie::INPUT_KEY_W))
-      currentPos -= forward * deltaTime * m_moveSpeed;
-   if (input->isKeyDown(aie::INPUT_KEY_S))
-      currentPos += forward * deltaTime * m_moveSpeed;
+      position += direction * deltaTime * m_moveSpeed;
    if (input->isKeyDown(aie::INPUT_KEY_A))
-      currentPos -= left * deltaTime * m_moveSpeed;
+      position -= right * deltaTime * m_moveSpeed;
+   if (input->isKeyDown(aie::INPUT_KEY_S))
+      position -= direction * deltaTime * m_moveSpeed;
    if (input->isKeyDown(aie::INPUT_KEY_D))
-      currentPos += left * deltaTime * m_moveSpeed;
+      position += right * deltaTime * m_moveSpeed;
 
    //vertical movement 
-   if (input->isKeyDown(aie::INPUT_KEY_SPACE)) 
-   {
-      currentPos += m_up * deltaTime * m_moveSpeed;
-   }
-   if (input->isKeyDown(aie::INPUT_KEY_LEFT_SHIFT)) 
-   {
-      currentPos -= m_up * deltaTime * m_moveSpeed;
-   }
-   setPosition(currentPos);
-}
+   if (input->isKeyDown(aie::INPUT_KEY_SPACE))
+      position += m_up * deltaTime * m_moveSpeed;
+   if (input->isKeyDown(aie::INPUT_KEY_LEFT_SHIFT))
+      position -= m_up * deltaTime * m_moveSpeed;
+   // m_up = global up/{0,1,0}
+   // use 'up' for relative up
 
-void FlyCamera::MouseLook(float deltaTime, aie::Input * input)
-{
-   mat4 currentTransform = getWorldTransform();
-   currentTransform[3] = vec4(0, 0, 0, 1);
-
-   //rotation
-   double deltaMX = input->getMouseDeltaX();
-   double deltaMY = input->getMouseDeltaY();
-   float deltaX = clamp((float)deltaMX, -10.0f, 10.0f) * m_MouseSensitivity * deltaTime;
-   float deltaY = clamp((float)deltaMY, -10.0f, 10.0f) * m_MouseSensitivity * deltaTime;
-
-   glm::mat4 rotation(1.0f);
-   //note: figure out why camera is tilted, it's really starting to bug me
-   rotation = glm::rotate(rotation, deltaY, getRow(0));
-   rotation = glm::rotate(rotation, -deltaX, { 0,1,0 });
-   currentTransform = rotation * currentTransform;
-
-   currentTransform[3] = vec4(getPosition(), 1);
-   setWorldTransform(currentTransform);
+   setLookAt(position, position + direction, up);
 }
 
 void FlyCamera::setSpeed(float spd)
@@ -84,7 +87,3 @@ void FlyCamera::setClamp(float clampAngle)
    m_clampAngle = clampAngle; 
 }
 
-void FlyCamera::setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up)
-{
-   m_viewMatrix = lookAt(from, to, up);
-}

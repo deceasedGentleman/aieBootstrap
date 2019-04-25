@@ -33,24 +33,25 @@ void Camera::setPerspective(float FOV, float aspectRatio, float near, float far)
 
 mat4 Camera::getWorldTransform()
 {
-   return inverse(m_viewMatrix);
+   return m_worldTransform;
 }
 
 void Camera::setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up)
 {
    m_viewMatrix = lookAt(from, to, up);
+   updateWorld();
 }
 
 void Camera::setPosition(glm::vec3 position)
 {
-   mat4 world = getWorldTransform();
-   world[3] = vec4(position,1);
-   setWorldTransform(world);
+   m_worldTransform[3] = vec4(position, m_worldTransform[3].w);
+   updateView();
 }
 
 void Camera::setWorldTransform(glm::mat4 WT)
 {
-   m_viewMatrix = inverse(WT);
+   m_worldTransform = WT;
+   updateView();
 }
 
 glm::vec3 Camera::getPosition()
@@ -66,4 +67,14 @@ glm::vec3 Camera::getRow(unsigned int row)
 glm::mat4 Camera::getProjectionView()
 {
    return m_projectionMatrix * m_viewMatrix;
+}
+
+void Camera::updateWorld()
+{
+   m_worldTransform = glm::inverse(m_viewMatrix);
+}
+
+void Camera::updateView()
+{
+   m_viewMatrix = glm::inverse(m_worldTransform);
 }

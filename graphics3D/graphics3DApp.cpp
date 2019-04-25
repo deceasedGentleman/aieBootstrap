@@ -5,6 +5,9 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include <Windows.h>
+#include <WinUser.h>
+
 #include "graphics3DApp.h"
 #include "Gizmos.h"
 #include "Input.h"
@@ -27,8 +30,9 @@ graphics3DApp::~graphics3DApp()
 bool graphics3DApp::startup()
 {
 
-   m_camera = new FlyCamera(radians(45.0f), 16 / 9,
-                           vec3(10), vec3(0), vec3(0, 1, 0));
+   m_camera = new FlyCamera(radians(45.0f), float(16 / 9),
+                            {0,0,5},
+                            0,0);
    setShowCursor(false);
 
    setBackgroundColour(0.25f, 0.25f, 0.25f);
@@ -46,6 +50,8 @@ void graphics3DApp::shutdown()
 
 void graphics3DApp::update(float deltaTime)
 {
+   //find the center of the screen
+   glm::vec2 mid = { getWindowWidth() / 2, getWindowHeight() / 2 };
 
    // wipe the gizmos clean for this frame
    Gizmos::clear();
@@ -64,7 +70,7 @@ void graphics3DApp::update(float deltaTime)
    }
 
    //draw a cross in the center of the screen
-   glm::vec2 mid = { getWindowWidth() / 2, getWindowHeight() / 2 };
+   
    float l = 4.0f;
    Gizmos::add2DLine(vec2(mid.x + l, mid.y), vec2(mid.x - l -1, mid.y), vec4(1));
    Gizmos::add2DLine(vec2(mid.x, mid.y + l), vec2(mid.x, mid.y - l -1), vec4(1));
@@ -79,7 +85,13 @@ void graphics3DApp::update(float deltaTime)
    if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
       quit();
 
+   //update the camera
    m_camera->update(deltaTime);
+
+   //reset cursor position to center of screen
+   SetCursorPos(mid.x, mid.y); // else the mouse gets stuck
+   
+   
 }
 
 void graphics3DApp::draw()

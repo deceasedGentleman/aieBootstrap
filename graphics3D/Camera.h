@@ -4,6 +4,14 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
+enum TransformAxis
+{
+   LEFT,
+   FORWARD,
+   UP,
+   POSITION
+};
+
 class Camera
 {
 public:
@@ -26,8 +34,12 @@ public:
    glm::mat4 getWorldTransform();
    glm::mat4 getProjectionView();
 
+   void updateWorld();
+   void updateView();
+
 protected:
    // camera transforms
+   glm::mat4 m_worldTransform;
    glm::mat4 m_viewMatrix;
    glm::mat4 m_projectionMatrix;
 };
