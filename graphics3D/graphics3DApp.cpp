@@ -31,7 +31,7 @@ bool graphics3DApp::startup()
 {
 
    m_camera = new FlyCamera(radians(45.0f), float(16 / 9),
-                            {0,0,5},
+                            {5,0,5},
                             0,0);
    setShowCursor(false);
 
@@ -62,8 +62,8 @@ void graphics3DApp::update(float deltaTime)
    for (int i = 0; i < 21; ++i)
    {
       Gizmos::addLine(vec3(-10 + i, 0, 10),
-                  vec3(-10 + i, 0, -10),
-                  i == 10 ? white : black);
+                      vec3(-10 + i, 0, -10),
+                   i == 10 ? white : black);
       Gizmos::addLine(vec3(10, 0, -10 + i),
                   vec3(-10, 0, -10 + i),
                   i == 10 ? white : black);
@@ -89,7 +89,9 @@ void graphics3DApp::update(float deltaTime)
    m_camera->update(deltaTime);
 
    //reset cursor position to center of screen
-   SetCursorPos(mid.x, mid.y); // else the mouse gets stuck
+   //SetCursorPos(mid.x, mid.y); // else the mouse gets stuck
+   //just kidding don't do that, the poor mouse input algorithm can't handle it
+   //leaving it broken for now, fix in quaterion branch
    
    
 }

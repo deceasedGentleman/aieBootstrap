@@ -17,8 +17,6 @@ Camera::Camera(float FOV, float AR, glm::vec3 pos, glm::vec3 lookTo, glm::vec3 u
 Camera::~Camera()
 {}
 
-
-
 void Camera::draw()
 {
    aie::Gizmos::draw(getProjectionView());
