@@ -2,11 +2,13 @@
 #include "Input.h"
 
 
-
+#include "Application.h"
+#include "gl_core_4_4.h"
+#include <GLFW/glfw3.h>
 
 FlyCamera::FlyCamera()
 {}
-
+ 
 FlyCamera::FlyCamera(float FOV, float AR, glm::vec3 pos, float VAngle, float HAngle) :
    m_up(0, 1, 0),
    m_XAngle(VAngle),
