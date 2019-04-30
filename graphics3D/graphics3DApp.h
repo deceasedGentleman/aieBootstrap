@@ -1,8 +1,7 @@
 #pragma once
-
 #include "Application.h"
-#include <glm/mat4x4.hpp>
 #include "Camera.h"
+
 class graphics3DApp : public aie::Application {
 public:
 
@@ -16,4 +15,5 @@ public:
 	virtual void draw();
 private:
    Camera* m_camera;
+   bool cursorLock;
 };

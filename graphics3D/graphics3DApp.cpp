@@ -5,38 +5,32 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#include <Windows.h>
-#include <WinUser.h>
-
 #include "graphics3DApp.h"
 #include "Gizmos.h"
 #include "Input.h"
 #include "FlyCamera.h"
 
+#include "gl_core_4_4.h"
+#include <GLFW/glfw3.h>
 
-using namespace glm;
 using aie::Gizmos;
 
 graphics3DApp::graphics3DApp()
-{
-
-}
+{}
 
 graphics3DApp::~graphics3DApp()
-{
-
-}
+{}
 
 bool graphics3DApp::startup()
 {
 
-   m_camera = new FlyCamera(radians(45.0f), float(16 / 9),
+   m_camera = new FlyCamera(glm::radians(45.0f), float(16 / 9),
                             {5,0,5},
                             0,0);
-   setShowCursor(false);
+   cursorLock = false;
+   glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
    setBackgroundColour(0.25f, 0.25f, 0.25f);
-
    // initialise gizmo primitive counts
    Gizmos::create(10000, 10000, 10000, 10000);
    return true;
@@ -50,6 +44,7 @@ void graphics3DApp::shutdown()
 
 void graphics3DApp::update(float deltaTime)
 {
+
    //find the center of the screen
    glm::vec2 mid = { getWindowWidth() / 2, getWindowHeight() / 2 };
 
@@ -57,48 +52,47 @@ void graphics3DApp::update(float deltaTime)
    Gizmos::clear();
 
    // draw a simple grid with gizmos
-   vec4 white(1);
-   vec4 black(0, 0, 0, 1);
+   glm::vec4 white(1);
+   glm::vec4 black(0, 0, 0, 1);
    for (int i = 0; i < 21; ++i)
    {
-      Gizmos::addLine(vec3(-10 + i, 0, 10),
-                      vec3(-10 + i, 0, -10),
+      Gizmos::addLine(glm::vec3(-10 + i, 0, 10),
+                       glm::vec3(-10 + i, 0, -10),
                    i == 10 ? white : black);
-      Gizmos::addLine(vec3(10, 0, -10 + i),
-                  vec3(-10, 0, -10 + i),
-                  i == 10 ? white : black);
+      Gizmos::addLine(glm::vec3(10, 0, -10 + i),
+                       glm::vec3(-10, 0, -10 + i),
+                   i == 10 ? white : black);
    }
 
-   //draw a cross in the center of the screen
-   
+   //draw a cross with radius 'l' in the center of the screen
    float l = 4.0f;
-   Gizmos::add2DLine(vec2(mid.x + l, mid.y), vec2(mid.x - l -1, mid.y), vec4(1));
-   Gizmos::add2DLine(vec2(mid.x, mid.y + l), vec2(mid.x, mid.y - l -1), vec4(1));
+   Gizmos::add2DLine(glm::vec2(mid.x + l, mid.y), glm::vec2(mid.x - l -1, mid.y), glm::vec4(1));
+   Gizmos::add2DLine(glm::vec2(mid.x, mid.y + l), glm::vec2(mid.x, mid.y - l -1), glm::vec4(1));
 
    // add a transform so that we can see the axis
-   Gizmos::addTransform(mat4(1));
+   Gizmos::addTransform(glm::mat4(1));
 
-
-   // quit if we press escape
+   // clicking on the window locks the cursor, pressing escape unlocks or quits if already unlocked
    aie::Input* input = aie::Input::getInstance();
 
-   if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
-      quit();
+   if (input->wasMouseButtonPressed(aie::INPUT_MOUSE_BUTTON_LEFT))
+      cursorLock = true;
+   if (input->wasKeyPressed(aie::INPUT_KEY_ESCAPE))
+   {
+      if (cursorLock)
+         cursorLock = false;
+      else if (!cursorLock)
+         quit();
+   }
+
+   glfwSetInputMode(m_window, GLFW_CURSOR, cursorLock ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
    //update the camera
    m_camera->update(deltaTime);
-
-   //reset cursor position to center of screen
-   //SetCursorPos(mid.x, mid.y); // else the mouse gets stuck
-   //just kidding don't do that, the poor mouse input algorithm can't handle it
-   //leaving it broken for now, fix in quaterion branch
-   
-   
 }
 
 void graphics3DApp::draw()
 {
-
    // wipe the screen to the background colour
    clearScreen();
 

@@ -1,10 +1,6 @@
 #include "FlyCamera.h"
 #include "Input.h"
-
-
 #include "Application.h"
-#include "gl_core_4_4.h"
-#include <GLFW/glfw3.h>
 
 FlyCamera::FlyCamera()
 {}
@@ -15,7 +11,6 @@ FlyCamera::FlyCamera(float FOV, float AR, glm::vec3 pos, float VAngle, float HAn
    m_YAngle(HAngle)
 {
    setPerspective(FOV, AR);
-   
 }
 
 FlyCamera::~FlyCamera()
