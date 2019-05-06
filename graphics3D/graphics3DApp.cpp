@@ -87,8 +87,11 @@ void graphics3DApp::update(float deltaTime)
 
    glfwSetInputMode(m_window, GLFW_CURSOR, cursorLock ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
-   //update the camera
-   m_camera->update(deltaTime);
+   if (cursorLock)
+   {
+      //update the camera's transform
+      m_camera->update(deltaTime);
+   }
 }
 
 void graphics3DApp::draw()
