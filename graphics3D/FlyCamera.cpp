@@ -11,6 +11,7 @@ FlyCamera::FlyCamera(float FOV, float AR, glm::vec3 pos, float VAngle, float HAn
    m_YAngle(HAngle)
 {
    setPerspective(FOV, AR);
+   setPosition(pos);
 }
 
 FlyCamera::~FlyCamera()
@@ -48,10 +49,8 @@ void FlyCamera::update(float deltaTime)
 
    // New Up vector
    glm::vec3 up = glm::cross(right, direction);
-   //m_up = up;
-
+   
    glm::vec3 position = getPosition();
-
 
    //horizontal movement
    if (input->isKeyDown(aie::INPUT_KEY_W))

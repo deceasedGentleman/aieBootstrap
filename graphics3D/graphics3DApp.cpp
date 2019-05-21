@@ -25,9 +25,9 @@ bool graphics3DApp::startup()
 {
 
    m_camera = new FlyCamera(glm::radians(45.0f), float(16 / 9),
-                            {5,0,5},
-                            0,0);
-   cursorLock = false;
+                            {-10, 10, -10},
+                            glm::radians(-35.0f), glm::radians(45.0f));
+   cursorLock = true;
    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
    setBackgroundColour(0.25f, 0.25f, 0.25f);
