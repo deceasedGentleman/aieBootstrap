@@ -41,7 +41,7 @@ bool PhysIntroApp::startup() {
 	m_physicsScene->setTimeStep(0.02f);
 
 	m_physicsScene->addActor(new Sphere(
-		vec2(-50, 1), vec2(0, 0), 240, 0.8f, 3.0f, glm::vec4(1, 1, 1, 1))
+		vec2(-50, 1), vec2(5, 0), 240, 0.8f, 3.0f, glm::vec4(1, 1, 1, 1))
 	);
 	m_physicsScene->addActor(new Plane(vec2( 1, 0), 90));
 	m_physicsScene->addActor(new Plane(vec2(-1, 0), 90));

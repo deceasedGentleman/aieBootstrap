@@ -137,16 +137,17 @@ bool PhysicsScene::sphere2sphere(PhysicsObj * obj1, PhysicsObj * obj2)
 		glm::vec2 collision = sphere1->getPosition() + colNormal * -sphere1->getRadius();
 
 		float dist = glm::distance(sphere1->getPosition(), sphere2->getPosition());
-		if (dist <= sphere1->getRadius() + sphere2->getRadius())
+      float pen = -(dist - sphere1->getRadius() + sphere2->getRadius());
+		if (pen >= 0)
 		{
 			debug.push_back(collision);
 			sphere1->resolveCollision(sphere2);
+
+         sphere1->setPosition(sphere1->getPosition() + colNormal * pen / 2.f);
+         sphere2->setPosition(sphere2->getPosition() - colNormal * pen / 2.f);
 			float totalMomentumAfter = glm::length(sphere1->getMomentum()) + glm::length(sphere2->getMomentum());
-			
 			return true;
 		}
 	}
-
-	//NOTE: reminder to put a more complete version of this in debug function
 	return false;
 }

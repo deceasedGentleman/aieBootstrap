@@ -6,7 +6,7 @@
 class PhysicsScene
 {
 public:
-	PhysicsScene() : PhysicsScene(0.01f, glm::vec2(0,0)) {}
+	PhysicsScene() : PhysicsScene(0.01f, glm::vec2(0,-1)) {}
 	PhysicsScene(float timeStep, glm::vec2 gravity) : m_timeStep(timeStep), m_gravity(gravity) {}
 	~PhysicsScene();
 

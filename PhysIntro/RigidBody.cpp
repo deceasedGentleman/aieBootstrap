@@ -15,6 +15,7 @@ RigidBody::RigidBody(ShapeType shapeID,
 							m_rotation(rotation), m_mass(mass), m_elasticity(elasticity)
 {
 	m_drag = 0.3f;
+   m_isKinematic = false;
 }
 
 

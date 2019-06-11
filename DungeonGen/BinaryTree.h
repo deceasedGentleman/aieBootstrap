@@ -18,6 +18,6 @@ private:
    bool findNode(int a_nSearchValue, TreeNode** ppOutNode, TreeNode** ppOutParent);
    void draw(aie::Renderer2D* renderer, TreeNode*, int x, int y, int horizontalSpacing, TreeNode* selected= nullptr);
    //The root node of the tree
-   TreeNode* m_pRoot;
+   TreeNode* _root;
 };
 
