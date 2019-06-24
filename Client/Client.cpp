@@ -1,13 +1,18 @@
+// local files
 #include "Client.h"
+
+// AIE files
 #include "Gizmos.h"
 #include "Input.h"
+#include "GameMessages.h"
+
+// Third Party dependencies
+#include <imgui.h>
+
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <iostream>
 
-using glm::vec3;
-using glm::vec4;
-using glm::mat4;
 using aie::Gizmos;
 
 Client::Client() {
@@ -21,15 +26,17 @@ bool Client::startup() {
 	
 	setBackgroundColour(0.25f, 0.25f, 0.25f);
 
+   Client::handleNetworkConnections();
+   
+
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
 
 	// create simple camera transforms
-	m_viewMatrix = glm::lookAt(vec3(10), vec3(0), vec3(0, 1, 0));
+	m_viewMatrix = glm::lookAt(glm::vec3(10), glm::vec3(0), glm::vec3(0, 1, 0));
 	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
 										  getWindowWidth() / (float)getWindowHeight(),
 										  0.1f, 1000.f);
-
 
 	return true;
 }
@@ -47,6 +54,7 @@ void Client::update(float deltaTime) {
 	// wipe the gizmos clean for this frame
 	Gizmos::clear();
 
+   Client::handleNetworkMessages();
 	
 	// quit if we press escape
 	aie::Input* input = aie::Input::getInstance();
@@ -70,7 +78,7 @@ void Client::draw() {
 
 void Client::handleNetworkConnections()
 {
-   m_peerInterface = RakNet::RakPeerInterface::GetInstance();
+   _peerInterface = RakNet::RakPeerInterface::GetInstance();
    initialiseClientConnection();
 }
 
@@ -78,11 +86,11 @@ void Client::initialiseClientConnection()
 {
    RakNet::SocketDescriptor sd;
 
-   m_peerInterface->Startup(1, &sd, 1);
+   _peerInterface->Startup(1, &sd, 1);
 
    std::cout << "connecting to server at: " << IP << std::endl;
 
-   RakNet::ConnectionAttemptResult result = m_peerInterface->Connect(IP, PORT, nullptr, 0);
+   RakNet::ConnectionAttemptResult result = _peerInterface->Connect(IP, PORT, nullptr, 0);
 
    if (result != RakNet::CONNECTION_ATTEMPT_STARTED)
    {
@@ -95,9 +103,9 @@ void Client::handleNetworkMessages()
 {
    RakNet::Packet* packet;
 
-   for (packet = m_peerInterface->Receive(); packet;
-             m_peerInterface->DeallocatePacket(packet),
-             packet = m_peerInterface->Receive())
+   for (packet = _peerInterface->Receive(); packet;
+             _peerInterface->DeallocatePacket(packet),
+             packet = _peerInterface->Receive())
    {
       switch (packet->data[0])
       {
@@ -115,15 +123,26 @@ void Client::handleNetworkMessages()
          break;
       case ID_DISCONNECTION_NOTIFICATION:
          std::cout << "We have been disconnected.\n";
-      break; 
+         break; 
       case ID_CONNECTION_LOST:
          std::cout << "We have lost connection.\n";
-      break; 
+         break; 
+      case ID_SERVER_TEXT_MESSAGE: 
+      case ID_CLIENT_CHAT_MESSAGE:
+      {
+         RakNet::BitStream bsIn(packet->data, packet->length, false);
+         bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+         RakNet::RakString str;
+         bsIn.Read(str);
+         std::cout << str << std::endl;
+         break;
+      }
       default:
          std::cout << "Received message with unknown id: " << packet->data[0] << std::endl;
          break;
       }
    }
 }
+
 
 
