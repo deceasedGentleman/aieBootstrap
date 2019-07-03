@@ -60,7 +60,10 @@ void Client::update(float deltaTime) {
    ImGui::Text("Networking test");
    handleNetworkMessages();
 
-   ImGui::InputText("Username", _name, 16);
+   if (ImGui::InputText("Username", _name.c_str, 16))
+   {
+      requestUsername(_name);
+   }
 
 	
 	// quit if we press escape
@@ -167,11 +170,7 @@ void Client::handleNetworkMessages()
       case ID_SERVER_TEXT_MESSAGE: 
       case ID_CLIENT_CHAT_MESSAGE:
       {
-         RakNet::BitStream bsIn(packet->data, packet->length, false);
-         bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
-         RakNet::RakString str;
-         bsIn.Read(str);
-         std::cout << str << std::endl;
+         recieveNetworkMessage(packet);
          break;
       }
       default:
@@ -179,6 +178,15 @@ void Client::handleNetworkMessages()
          break;
       }
    }
+}
+
+void Client::recieveNetworkMessage(RakNet::Packet * packet)
+{
+   RakNet::BitStream bsIn(packet->data, packet->length, false);
+   bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+   RakNet::RakString str;
+   bsIn.Read(str);
+   std::cout << str << std::endl;
 }
 
 void Client::onSetClientIDPacket(RakNet::Packet* packet)
@@ -189,9 +197,14 @@ void Client::onSetClientIDPacket(RakNet::Packet* packet)
    std::cout << "Set my Client ID to: " << USER_ID << std::endl;
 }
 
-void Client::requestUsername(const char name[16])
-{
 
+void Client::requestUsername(std::string name)
+{
+   RakNet::BitStream bs;
+   bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CHANGE_USERNAME);
+   bs.Write(_name);
+   _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+                        RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
 

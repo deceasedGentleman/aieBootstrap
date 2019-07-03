@@ -14,6 +14,7 @@
 std::map<RakNet::SystemAddress, std::string> usernameForAddress;
 
 void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface);
+void forwardMessage(RakNet::Packet * packet, RakNet::RakPeerInterface * peerInterface);
 void changeClientName(RakNet::Packet * packet);
 void sendClientPing(RakNet::RakPeerInterface* peerInterface);
 void sendNewClientID(RakNet::RakPeerInterface* pPeerInterface, RakNet::SystemAddress& address);
@@ -79,10 +80,7 @@ void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface)
          }
          case ID_CLIENT_CHAT_MESSAGE:
          {
-            std::cout << "Forwarding message from client. \n";
-            RakNet::BitStream bsIn(packet->data, packet->length, false);
-            peerInterface->Send(&bsIn, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
-                                RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+            forwardMessage(packet, peerInterface);
             break;
          }
          default:
@@ -94,6 +92,24 @@ void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface)
    }
 }
 
+void forwardMessage(RakNet::Packet * packet, RakNet::RakPeerInterface * peerInterface)
+{
+   std::cout << "Forwarding message from client. \n";
+   RakNet::BitStream bsIn(packet->data, packet->length, false);
+   bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+
+   std::string str;
+   bsIn.Read(str);
+   RakNet::BitStream bs;
+
+   bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CHAT_MESSAGE);
+
+   bs.Write(usernameForAddress[packet->systemAddress] + ": " + str);
+
+   peerInterface->Send(&bsIn, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+                       RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+}
+
 void changeClientName(RakNet::Packet * packet)
 {
    RakNet::BitStream bsIn(packet->data, packet->length, false);
@@ -102,10 +118,6 @@ void changeClientName(RakNet::Packet * packet)
    std::string ostr = usernameForAddress[packet->systemAddress];
    RakNet::RakString str;
    bsIn.Read(str);
-   for (size_t i = 0; i < ; i++)
-   {
-
-   }
    std::cout << "Changed Client's username from " << ostr << " to " << str << std::endl;
    usernameForAddress[packet->systemAddress] = str;
 }

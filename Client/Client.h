@@ -29,8 +29,9 @@ public:
    void handleNetworkConnections();
    void initialiseClientConnection();
    void handleNetworkMessages();
+   void recieveNetworkMessage(RakNet::Packet* packet);
    void onSetClientIDPacket(RakNet::Packet* packet);
-   void requestUsername(const char name[16]);
+   void requestUsername(std::string name);
 
 protected:
 
@@ -38,7 +39,7 @@ protected:
    const char* IP = "127.0.0.1";
    const unsigned PORT = 5456;
    int USER_ID = 0;
-   char _name[16] = "ANON";
+   std::string _name = "ANON";
    GameObject _gameObject;
 
 	glm::mat4	m_viewMatrix;
