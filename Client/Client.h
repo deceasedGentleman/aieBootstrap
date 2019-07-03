@@ -7,6 +7,7 @@
 #include <MessageIdentifiers.h>
 #include <BitStream.h>
 
+
 class Client : public aie::Application {
 public:
 
@@ -28,6 +29,8 @@ protected:
    RakNet::RakPeerInterface* _peerInterface;
    const char* IP = "127.0.0.1";
    const unsigned PORT = 5456;
+   char _name[64] = "ANON";
+
 
 	glm::mat4	m_viewMatrix;
 	glm::mat4	m_projectionMatrix;

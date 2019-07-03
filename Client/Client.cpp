@@ -27,7 +27,6 @@ bool Client::startup() {
 	setBackgroundColour(0.25f, 0.25f, 0.25f);
 
    Client::handleNetworkConnections();
-   
 
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
@@ -54,7 +53,11 @@ void Client::update(float deltaTime) {
 	// wipe the gizmos clean for this frame
 	Gizmos::clear();
 
-   Client::handleNetworkMessages();
+   ImGui::Text("Networking test");
+   handleNetworkMessages();
+
+   ImGui::InputText("Username", _name, 64);
+
 	
 	// quit if we press escape
 	aie::Input* input = aie::Input::getInstance();
@@ -101,6 +104,7 @@ void Client::initialiseClientConnection()
 
 void Client::handleNetworkMessages()
 {
+
    RakNet::Packet* packet;
 
    for (packet = _peerInterface->Receive(); packet;
@@ -117,6 +121,9 @@ void Client::handleNetworkMessages()
          break;
       case ID_CONNECTION_REQUEST_ACCEPTED:
          std::cout << "Our connection request has been accepted.\n";
+         break;
+      case ID_CONNECTION_ATTEMPT_FAILED:
+         std::cout << "Our connection attempt has failed. \n";
          break;
       case ID_NO_FREE_INCOMING_CONNECTIONS:
          std::cout << "The server is full.\n";
@@ -138,7 +145,7 @@ void Client::handleNetworkMessages()
          break;
       }
       default:
-         std::cout << "Received message with unknown id: " << packet->data[0] << std::endl;
+         std::cout << "Received message with unknown id: " << (DefaultMessageIDTypes)packet->data[0] << std::endl;
          break;
       }
    }

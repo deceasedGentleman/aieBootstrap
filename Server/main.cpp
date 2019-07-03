@@ -58,7 +58,7 @@ void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface)
          switch (packet->data[0])
          {
          case ID_NEW_INCOMING_CONNECTION:
-            usernameForAddress[packet->systemAddress] = "ANON";
+            usernameForAddress[packet->systemAddress] = "";
             std::cout << "A connection is incoming. \n";
             break;
          case  ID_DISCONNECTION_NOTIFICATION:
