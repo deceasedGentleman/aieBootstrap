@@ -8,6 +8,12 @@
 #include <BitStream.h>
 
 
+struct GameObject
+{
+   glm::vec3 position;
+   glm::vec4 colour;
+};
+
 class Client : public aie::Application {
 public:
 
@@ -23,14 +29,17 @@ public:
    void handleNetworkConnections();
    void initialiseClientConnection();
    void handleNetworkMessages();
+   void onSetClientIDPacket(RakNet::Packet* packet);
+   void requestUsername(const char name[16]);
 
 protected:
 
    RakNet::RakPeerInterface* _peerInterface;
    const char* IP = "127.0.0.1";
    const unsigned PORT = 5456;
-   char _name[64] = "ANON";
-
+   int USER_ID = 0;
+   char _name[16] = "ANON";
+   GameObject _gameObject;
 
 	glm::mat4	m_viewMatrix;
 	glm::mat4	m_projectionMatrix;

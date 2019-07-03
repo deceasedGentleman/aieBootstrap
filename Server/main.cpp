@@ -14,7 +14,12 @@
 std::map<RakNet::SystemAddress, std::string> usernameForAddress;
 
 void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface);
+void changeClientName(RakNet::Packet * packet);
 void sendClientPing(RakNet::RakPeerInterface* peerInterface);
+void sendNewClientID(RakNet::RakPeerInterface* pPeerInterface, RakNet::SystemAddress& address);
+
+int nextClientID = 1;
+
 
 /////////////////////////////////////////////
 int main()
@@ -60,6 +65,7 @@ void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface)
          case ID_NEW_INCOMING_CONNECTION:
             usernameForAddress[packet->systemAddress] = "";
             std::cout << "A connection is incoming. \n";
+            sendNewClientID(peerInterface, packet->systemAddress);
             break;
          case  ID_DISCONNECTION_NOTIFICATION:
             std::cout << "A client has disconnected. \n";
@@ -69,14 +75,7 @@ void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface)
             break;
          case ID_CLIENT_CHANGE_USERNAME:
          {
-            RakNet::BitStream bsIn(packet->data, packet->length, false);
-            bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
-
-            std::string ostr = usernameForAddress[packet->systemAddress];
-            RakNet::RakString str;
-            bsIn.Read(str);
-            std::cout << "Changed Client's username from " << ostr << " to " << str << std::endl;
-            usernameForAddress[packet->systemAddress] = str;
+            changeClientName(packet);
          }
          case ID_CLIENT_CHAT_MESSAGE:
          {
@@ -95,6 +94,22 @@ void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface)
    }
 }
 
+void changeClientName(RakNet::Packet * packet)
+{
+   RakNet::BitStream bsIn(packet->data, packet->length, false);
+   bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+
+   std::string ostr = usernameForAddress[packet->systemAddress];
+   RakNet::RakString str;
+   bsIn.Read(str);
+   for (size_t i = 0; i < ; i++)
+   {
+
+   }
+   std::cout << "Changed Client's username from " << ostr << " to " << str << std::endl;
+   usernameForAddress[packet->systemAddress] = str;
+}
+
 /////////////////////////////////////////////
 // pings the clients once per second
 /////////////////////////////////////////////
@@ -109,4 +124,14 @@ void sendClientPing(RakNet::RakPeerInterface* peerInterface)
                           RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
       std::this_thread::sleep_for(std::chrono::seconds(10));
    }
+}
+
+void sendNewClientID(RakNet::RakPeerInterface* peerInterface, RakNet::SystemAddress& address)
+{
+   RakNet::BitStream bs;
+   bs.Write((RakNet::MessageID)GameMessages::ID_SERVER_SET_CLIENT_ID);
+   bs.Write(nextClientID);
+   nextClientID++;
+
+   peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0, address, false);
 }

@@ -8,6 +8,7 @@
 
 // Third Party dependencies
 #include <imgui.h>
+#include <imgui_glfw3.h>
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
@@ -30,6 +31,9 @@ bool Client::startup() {
 
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
+
+   _gameObject.position = glm::vec3(0);
+   _gameObject.colour = glm::vec4(1, 0, 0, 1);
 
 	// create simple camera transforms
 	m_viewMatrix = glm::lookAt(glm::vec3(10), glm::vec3(0), glm::vec3(0, 1, 0));
@@ -56,11 +60,37 @@ void Client::update(float deltaTime) {
    ImGui::Text("Networking test");
    handleNetworkMessages();
 
-   ImGui::InputText("Username", _name, 64);
+   ImGui::InputText("Username", _name, 16);
 
 	
 	// quit if we press escape
 	aie::Input* input = aie::Input::getInstance();
+
+   if (input->isKeyDown(aie::INPUT_KEY_LEFT))
+   {
+      _gameObject.position.x -= 10.0f * deltaTime;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
+   {
+      _gameObject.position.x += 10.0f * deltaTime;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_UP))
+   {
+      _gameObject.position.y += 10.0f * deltaTime;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_DOWN))
+   {
+      _gameObject.position.y -= 10.0f * deltaTime;
+   }
+
+
+   ImGui::BeginGroup();
+   ImGui::Text("game object");
+   ImGui::InputFloat3("position", glm::value_ptr(_gameObject.position));
+   ImGui::ColorEdit3("colour", glm::value_ptr(_gameObject.colour));
+   ImGui::EndGroup();
+
+   Gizmos::addSphere(_gameObject.position, 1.0f, 32, 32, _gameObject.colour);
 
 	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
 		quit();
@@ -149,6 +179,19 @@ void Client::handleNetworkMessages()
          break;
       }
    }
+}
+
+void Client::onSetClientIDPacket(RakNet::Packet* packet)
+{
+   RakNet::BitStream bsIn(packet->data, packet->length, false);
+   bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+   bsIn.Read(USER_ID);
+   std::cout << "Set my Client ID to: " << USER_ID << std::endl;
+}
+
+void Client::requestUsername(const char name[16])
+{
+
 }
 
 
