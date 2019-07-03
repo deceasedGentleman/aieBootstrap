@@ -25,7 +25,7 @@ public:
 
 protected:
 
-   RakNet::RakPeerInterface* m_peerInterface;
+   RakNet::RakPeerInterface* _peerInterface;
    const char* IP = "127.0.0.1";
    const unsigned PORT = 5456;
 
