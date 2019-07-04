@@ -64,7 +64,7 @@ void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface)
          switch (packet->data[0])
          {
          case ID_NEW_INCOMING_CONNECTION:
-            usernameForAddress[packet->systemAddress] = "";
+            usernameForAddress[packet->systemAddress] = "ANON";
             std::cout << "A connection is incoming. \n";
             sendNewClientID(peerInterface, packet->systemAddress);
             break;
@@ -75,12 +75,15 @@ void handleNetworkMessages(RakNet::RakPeerInterface* peerInterface)
             std::cout << "A client lost connection. \n";
             break;
          case ID_CLIENT_CHANGE_USERNAME:
-         {
             changeClientName(packet);
-         }
          case ID_CLIENT_CHAT_MESSAGE:
-         {
             forwardMessage(packet, peerInterface);
+            break;
+         case ID_CLIENT_OBJECT_DATA:
+         {
+            RakNet::BitStream bs(packet->data, packet->length, false);
+            peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+                       packet->systemAddress, true);
             break;
          }
          default:
@@ -106,7 +109,7 @@ void forwardMessage(RakNet::Packet * packet, RakNet::RakPeerInterface * peerInte
 
    bs.Write(usernameForAddress[packet->systemAddress] + ": " + str);
 
-   peerInterface->Send(&bsIn, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+   peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
                        RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 

@@ -60,32 +60,13 @@ void Client::update(float deltaTime) {
    ImGui::Text("Networking test");
    handleNetworkMessages();
 
-   if (ImGui::InputText("Username", _name.c_str, 16))
+   static char name[8];
+   if (ImGui::InputText("Username", name, 16))
    {
-      requestUsername(_name);
+      requestUsername(name);
    }
 
-	
-	// quit if we press escape
-	aie::Input* input = aie::Input::getInstance();
-
-   if (input->isKeyDown(aie::INPUT_KEY_LEFT))
-   {
-      _gameObject.position.x -= 10.0f * deltaTime;
-   }
-   if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
-   {
-      _gameObject.position.x += 10.0f * deltaTime;
-   }
-   if (input->isKeyDown(aie::INPUT_KEY_UP))
-   {
-      _gameObject.position.y += 10.0f * deltaTime;
-   }
-   if (input->isKeyDown(aie::INPUT_KEY_DOWN))
-   {
-      _gameObject.position.y -= 10.0f * deltaTime;
-   }
-
+   handleInputs(deltaTime);
 
    ImGui::BeginGroup();
    ImGui::Text("game object");
@@ -95,11 +76,52 @@ void Client::update(float deltaTime) {
 
    Gizmos::addSphere(_gameObject.position, 1.0f, 32, 32, _gameObject.colour);
 
-	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
-		quit();
+   sendClientGameObject();
+
 }
 
-void Client::draw() {
+void Client::handleInputs(float deltaTime)
+{
+   aie::Input* input = aie::Input::getInstance();
+   bool stateChanged = false;
+
+   if (input->isKeyDown(aie::INPUT_KEY_LEFT))
+   {
+      _gameObject.position.x -= 10.0f * deltaTime;
+      stateChanged = true;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
+   {
+      _gameObject.position.x += 10.0f * deltaTime;
+      stateChanged = true;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_UP))
+   {
+      _gameObject.position.z += 10.0f * deltaTime;
+      stateChanged = true;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_DOWN))
+   {
+      _gameObject.position.z -= 10.0f * deltaTime;
+      stateChanged = true;
+   }
+
+   if(stateChanged)
+      sendClientGameObject();
+
+   // quit if we press escape
+   if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
+      quit();
+}
+
+void Client::draw() 
+{
+
+   for (auto& otherClient : _otherClients)
+   {
+      Gizmos::addSphere(otherClient.second.position,
+                        1.0f, 32, 32, otherClient.second.colour);
+   }
 
 	// wipe the screen to the background colour
 	clearScreen();
@@ -167,12 +189,16 @@ void Client::handleNetworkMessages()
       case ID_CONNECTION_LOST:
          std::cout << "We have lost connection.\n";
          break; 
+      case ID_SERVER_SET_CLIENT_ID:
+         onSetClientIDPacket(packet);
+         break;
       case ID_SERVER_TEXT_MESSAGE: 
       case ID_CLIENT_CHAT_MESSAGE:
-      {
          recieveNetworkMessage(packet);
          break;
-      }
+      case ID_CLIENT_OBJECT_DATA:
+         recieveClientGameObject(packet);
+         break;
       default:
          std::cout << "Received message with unknown id: " << (DefaultMessageIDTypes)packet->data[0] << std::endl;
          break;
@@ -189,14 +215,45 @@ void Client::recieveNetworkMessage(RakNet::Packet * packet)
    std::cout << str << std::endl;
 }
 
+void Client::recieveClientGameObject(RakNet::Packet * packet)
+{
+   RakNet::BitStream bsIn(packet->data, packet->length, false);
+   bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+
+   int clientID;
+   bsIn.Read(clientID);
+
+   if (clientID != _userID)
+   {
+      GameObject clientData;
+      bsIn.Read((char*)&clientData, sizeof(GameObject));
+
+      _otherClients[clientID] = clientData;
+
+      // debug message
+      std::cout << "[DBG] Client " << clientID << " at: (" << 
+         clientData.position.x << ", " << clientData.position.z << ")" << std::endl;
+   }
+}
+
 void Client::onSetClientIDPacket(RakNet::Packet* packet)
 {
    RakNet::BitStream bsIn(packet->data, packet->length, false);
    bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
-   bsIn.Read(USER_ID);
-   std::cout << "Set my Client ID to: " << USER_ID << std::endl;
+   bsIn.Read(_userID);
+   std::cout << "Set my Client ID to: " << _userID << std::endl;
 }
 
+void Client::sendClientGameObject()
+{
+   RakNet::BitStream bs;
+   bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_OBJECT_DATA);
+   bs.Write(_userID);
+   bs.Write((char*)&_gameObject, sizeof(GameObject));
+
+   _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+                        RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+}
 
 void Client::requestUsername(std::string name)
 {

@@ -7,6 +7,9 @@
 #include <MessageIdentifiers.h>
 #include <BitStream.h>
 
+#include <string>
+#include <unordered_map>
+
 
 struct GameObject
 {
@@ -25,21 +28,28 @@ public:
 
 	virtual void update(float deltaTime);
 	virtual void draw();
+   void handleInputs(float deltaTime);
 
-   void handleNetworkConnections();
    void initialiseClientConnection();
-   void handleNetworkMessages();
-   void recieveNetworkMessage(RakNet::Packet* packet);
-   void onSetClientIDPacket(RakNet::Packet* packet);
+   void handleNetworkConnections();
+
+   void sendClientGameObject();
    void requestUsername(std::string name);
+
+   void handleNetworkMessages();
+
+   void recieveClientGameObject(RakNet::Packet* packet);
+   void onSetClientIDPacket(RakNet::Packet* packet);
+   void recieveNetworkMessage(RakNet::Packet* packet);
 
 protected:
 
    RakNet::RakPeerInterface* _peerInterface;
    const char* IP = "127.0.0.1";
    const unsigned PORT = 5456;
-   int USER_ID = 0;
+   int _userID = 0;
    std::string _name = "ANON";
+   std::unordered_map<int, GameObject> _otherClients;
    GameObject _gameObject;
 
 	glm::mat4	m_viewMatrix;
