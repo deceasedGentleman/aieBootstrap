@@ -60,12 +60,23 @@ void Client::update(float deltaTime) {
    ImGui::Text("Networking test");
    handleNetworkMessages();
 
-   static char name[8];
-   if (ImGui::InputText("Username", name, 16))
+   // messaging removed for the time being
+/*
+   ImGui::BeginChild("Messaging");
+   if (ImGui::InputText("Username", _name.c_str, 8, ImGuiInputTextFlags_EnterReturnsTrue))
    {
-      requestUsername(name);
-   }
 
+   }
+      ImGui::BeginChild("ChatLog", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+      for (int i = 0; i < 100; i++)
+      {
+         ImGui::Text("NAME: message");
+      }
+      ImGui::EndChild();
+   ImGui::SameLine();
+   ImGui::te
+   if(ImGui::Button(""))
+*/
    handleInputs(deltaTime);
 
    ImGui::BeginGroup();
@@ -230,9 +241,9 @@ void Client::recieveClientGameObject(RakNet::Packet * packet)
 
       _otherClients[clientID] = clientData;
 
-      // debug message
-      std::cout << "[DBG] Client " << clientID << " at: (" << 
-         clientData.position.x << ", " << clientData.position.z << ")" << std::endl;
+      //// debug message
+      //std::cout << "[DBG] Client " << clientID << " at: (" << 
+      //   clientData.position.x << ", " << clientData.position.z << ")" << std::endl;
    }
 }
 
