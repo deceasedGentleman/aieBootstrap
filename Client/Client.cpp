@@ -29,11 +29,10 @@ bool Client::startup() {
 
    Client::handleNetworkConnections();
 
+   _clientObject = GameObject();
+
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
-
-   _gameObject.position = glm::vec3(0);
-   _gameObject.colour = glm::vec4(1, 0, 0, 1);
 
 	// create simple camera transforms
 	m_viewMatrix = glm::lookAt(glm::vec3(10), glm::vec3(0), glm::vec3(0, 1, 0));
@@ -77,15 +76,16 @@ void Client::update(float deltaTime) {
    ImGui::te
    if(ImGui::Button(""))
 */
+
    handleInputs(deltaTime);
 
    ImGui::BeginGroup();
    ImGui::Text("game object");
-   ImGui::InputFloat3("position", glm::value_ptr(_gameObject.position));
-   ImGui::ColorEdit3("colour", glm::value_ptr(_gameObject.colour));
+   ImGui::InputFloat3("position", glm::value_ptr(_clientObject.data.position));
+   ImGui::ColorEdit3("colour", glm::value_ptr(_clientObject.data.colour));
    ImGui::EndGroup();
 
-   Gizmos::addSphere(_gameObject.position, 1.0f, 32, 32, _gameObject.colour);
+   Gizmos::addSphere(_clientObject.data.position, 1.0f, 32, 32, _clientObject.data.colour);
 
    sendClientGameObject();
 
@@ -98,22 +98,22 @@ void Client::handleInputs(float deltaTime)
 
    if (input->isKeyDown(aie::INPUT_KEY_LEFT))
    {
-      _gameObject.position.x -= 10.0f * deltaTime;
-      stateChanged = true;
-   }
-   if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
-   {
-      _gameObject.position.x += 10.0f * deltaTime;
-      stateChanged = true;
-   }
-   if (input->isKeyDown(aie::INPUT_KEY_UP))
-   {
-      _gameObject.position.z += 10.0f * deltaTime;
+      _clientObject.data.position.x -= 10.0f * deltaTime;
       stateChanged = true;
    }
    if (input->isKeyDown(aie::INPUT_KEY_DOWN))
    {
-      _gameObject.position.z -= 10.0f * deltaTime;
+      _clientObject.data.position.z -= 10.0f * deltaTime;
+      stateChanged = true;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
+   {
+      _clientObject.data.position.x += 10.0f * deltaTime;
+      stateChanged = true;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_UP))
+   {
+      _clientObject.data.position.z += 10.0f * deltaTime;
       stateChanged = true;
    }
 
@@ -130,8 +130,8 @@ void Client::draw()
 
    for (auto& otherClient : _otherClients)
    {
-      Gizmos::addSphere(otherClient.second.position,
-                        1.0f, 32, 32, otherClient.second.colour);
+      Gizmos::addSphere(otherClient.second.data.position,
+                        1.0f, 32, 32, otherClient.second.data.colour);
    }
 
 	// wipe the screen to the background colour
@@ -165,7 +165,6 @@ void Client::initialiseClientConnection()
    {
       std::cout << "Unable to start connection, Error number: " << result << std::endl;
    }
-
 }
 
 void Client::handleNetworkMessages()
@@ -234,16 +233,14 @@ void Client::recieveClientGameObject(RakNet::Packet * packet)
    int clientID;
    bsIn.Read(clientID);
 
-   if (clientID != _userID)
+   if (clientID != _clientObject.id)
    {
       GameObject clientData;
+      clientData.Read(packet);
+
       bsIn.Read((char*)&clientData, sizeof(GameObject));
 
       _otherClients[clientID] = clientData;
-
-      //// debug message
-      //std::cout << "[DBG] Client " << clientID << " at: (" << 
-      //   clientData.position.x << ", " << clientData.position.z << ")" << std::endl;
    }
 }
 
@@ -251,19 +248,13 @@ void Client::onSetClientIDPacket(RakNet::Packet* packet)
 {
    RakNet::BitStream bsIn(packet->data, packet->length, false);
    bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
-   bsIn.Read(_userID);
-   std::cout << "Set my Client ID to: " << _userID << std::endl;
+   bsIn.Read(_clientObject.id);
+   std::cout << "Set my Client ID to: " << _clientObject.id << std::endl;
 }
 
 void Client::sendClientGameObject()
 {
-   RakNet::BitStream bs;
-   bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_OBJECT_DATA);
-   bs.Write(_userID);
-   bs.Write((char*)&_gameObject, sizeof(GameObject));
-
-   _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
-                        RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+   _clientObject.Write(_peerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
 void Client::requestUsername(std::string name)

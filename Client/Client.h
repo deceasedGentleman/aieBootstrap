@@ -10,12 +10,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "GameObject.h"
 
-struct GameObject
-{
-   glm::vec3 position;
-   glm::vec4 colour;
-};
+
 
 class Client : public aie::Application {
 public:
@@ -50,7 +47,7 @@ protected:
    int _userID = 0;
    std::string _name = "ANON";
    std::unordered_map<int, GameObject> _otherClients;
-   GameObject _gameObject;
+   GameObject _clientObject;
 
 	glm::mat4	m_viewMatrix;
 	glm::mat4	m_projectionMatrix;
