@@ -12,8 +12,6 @@
 
 #include "GameObject.h"
 
-
-
 class Client : public aie::Application {
 public:
 
@@ -25,19 +23,24 @@ public:
 
 	virtual void update(float deltaTime);
 	virtual void draw();
-   void handleInputs(float deltaTime);
+   void HandleInputs(float deltaTime);
+
+   static void Chat(Client* client);
 
    void initialiseClientConnection();
    void handleNetworkConnections();
 
    void sendClientGameObject();
+   void sendChatMessage(std::string message);
    void requestUsername(std::string name);
+   void SpawnBullet();
 
-   void handleNetworkMessages();
+   void HandleNetworkMessages();
 
    void recieveClientGameObject(RakNet::Packet* packet);
-   void onSetClientIDPacket(RakNet::Packet* packet);
    void recieveNetworkMessage(RakNet::Packet* packet);
+   void onSetClientIDPacket(RakNet::Packet* packet);
+   void onDespawn(RakNet::Packet* packet);
 
 protected:
 
@@ -46,8 +49,9 @@ protected:
    const unsigned PORT = 5456;
    int _userID = 0;
    std::string _name = "ANON";
-   std::unordered_map<int, GameObject> _otherClients;
-   GameObject _clientObject;
+   std::unordered_map<int, GameObject> _otherObjects;
+   GameObject _myObject;
+   glm::vec3 _facing;
 
 	glm::mat4	m_viewMatrix;
 	glm::mat4	m_projectionMatrix;

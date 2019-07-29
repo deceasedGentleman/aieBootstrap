@@ -1,10 +1,12 @@
+
 // local files
 #include "Client.h"
+#include "GameMessages.h"
+#include "GameObject.h"
 
 // AIE files
 #include "Gizmos.h"
 #include "Input.h"
-#include "GameMessages.h"
 
 // Third Party dependencies
 #include <imgui.h>
@@ -12,7 +14,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+
 #include <iostream>
+#include <thread>
 
 using aie::Gizmos;
 
@@ -29,7 +33,9 @@ bool Client::startup() {
 
    Client::handleNetworkConnections();
 
-   _clientObject = GameObject();
+   _myObject.id = 0;
+   _myObject.data.position = glm::vec3(0, 0, 0);
+   _myObject.data.colour = glm::vec4(1, 0, 0, 1);
 
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
@@ -39,6 +45,8 @@ bool Client::startup() {
 	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
 										  getWindowWidth() / (float)getWindowHeight(),
 										  0.1f, 1000.f);
+
+   //std::thread chatThread(Chat, this);
 
 	return true;
 }
@@ -57,7 +65,7 @@ void Client::update(float deltaTime) {
 	Gizmos::clear();
 
    ImGui::Text("Networking test");
-   handleNetworkMessages();
+   HandleNetworkMessages();
 
    // messaging removed for the time being
 /*
@@ -77,44 +85,55 @@ void Client::update(float deltaTime) {
    if(ImGui::Button(""))
 */
 
-   handleInputs(deltaTime);
+   HandleInputs(deltaTime);
 
    ImGui::BeginGroup();
    ImGui::Text("game object");
-   ImGui::InputFloat3("position", glm::value_ptr(_clientObject.data.position));
-   ImGui::ColorEdit3("colour", glm::value_ptr(_clientObject.data.colour));
+   ImGui::InputFloat3("position", glm::value_ptr(_myObject.data.position));
+   ImGui::ColorEdit3("colour", glm::value_ptr(_myObject.data.colour));
    ImGui::EndGroup();
 
-   Gizmos::addSphere(_clientObject.data.position, 1.0f, 32, 32, _clientObject.data.colour);
-
+   
+   if (_myObject.id != 0)
    sendClientGameObject();
 
 }
 
-void Client::handleInputs(float deltaTime)
+void Client::HandleInputs(float deltaTime)
 {
    aie::Input* input = aie::Input::getInstance();
    bool stateChanged = false;
 
+   // directional movement
    if (input->isKeyDown(aie::INPUT_KEY_LEFT))
    {
-      _clientObject.data.position.x -= 10.0f * deltaTime;
-      stateChanged = true;
-   }
-   if (input->isKeyDown(aie::INPUT_KEY_DOWN))
-   {
-      _clientObject.data.position.z -= 10.0f * deltaTime;
+      _myObject.data.position.x -= 10.0f * deltaTime;
+      _facing = glm::vec3(-1, 0, 0);
       stateChanged = true;
    }
    if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
    {
-      _clientObject.data.position.x += 10.0f * deltaTime;
+      _myObject.data.position.x += 10.0f * deltaTime;
+      _facing = glm::vec3(1, 0, 0);
       stateChanged = true;
    }
    if (input->isKeyDown(aie::INPUT_KEY_UP))
    {
-      _clientObject.data.position.z += 10.0f * deltaTime;
+      _myObject.data.position.z -= 10.0f * deltaTime; 
+      _facing = glm::vec3(0, -1, 0);
       stateChanged = true;
+   }
+   if (input->isKeyDown(aie::INPUT_KEY_DOWN))
+   {
+      _myObject.data.position.z += 10.0f * deltaTime;
+      _facing = glm::vec3(0, 1, 0);
+      stateChanged = true;
+   }
+
+   // firing
+   if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
+   {
+      this->SpawnBullet();
    }
 
    if(stateChanged)
@@ -125,13 +144,55 @@ void Client::handleInputs(float deltaTime)
       quit();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// work on chat functionality stalled due to me not understanding strings
+///////////////////////////////////////////////////////////////////////////////
+void Client::Chat(Client* client)
+{
+   while (true)
+   {
+      std::string input;
+      std::getline(std::cin, input, ' ');
+      if (input == "help")
+      {
+         std::cin.ignore();
+         std::cout << "available commands are:\n"
+            << "help: lists commands\n"
+            << "say [text]: sends a text message to the other clients\n"
+            << "name [text]: changes your client name to [text]\n"
+            << std::endl;
+      } 
+      else if (input == "say")
+      {
+         if (std::getline(std::cin, input))
+         {
+            client->sendChatMessage(input);
+         }
+      }
+      else if (input == "name")
+      {
+         if (std::getline(std::cin, input))
+         {
+            client->requestUsername(input);
+         }
+      }
+      else
+      {
+         std::cout << "command not recognised, type 'help' for a list of options" << std::endl;
+      }
+   }
+}
+
 void Client::draw() 
 {
-
-   for (auto& otherClient : _otherClients)
+   // add own and other spheres
+   Gizmos::addSphere(_myObject.data.position, 1.0f, 32, 32, _myObject.data.colour);
+   for (auto& otherClient : _otherObjects)
    {
-      Gizmos::addSphere(otherClient.second.data.position,
-                        1.0f, 32, 32, otherClient.second.data.colour);
+      if (otherClient.first >= 1000)
+      { Gizmos::addSphere(otherClient.second.data.position, 0.2f, 8, 8, otherClient.second.data.colour); }
+      else 
+      { Gizmos::addSphere(otherClient.second.data.position, 1.0f, 32, 32, otherClient.second.data.colour); }
    }
 
 	// wipe the screen to the background colour
@@ -167,7 +228,7 @@ void Client::initialiseClientConnection()
    }
 }
 
-void Client::handleNetworkMessages()
+void Client::HandleNetworkMessages()
 {
 
    RakNet::Packet* packet;
@@ -202,6 +263,8 @@ void Client::handleNetworkMessages()
       case ID_SERVER_SET_CLIENT_ID:
          onSetClientIDPacket(packet);
          break;
+      case ID_SERVER_DESPAWN:
+         onDespawn(packet);
       case ID_SERVER_TEXT_MESSAGE: 
       case ID_CLIENT_CHAT_MESSAGE:
          recieveNetworkMessage(packet);
@@ -233,14 +296,11 @@ void Client::recieveClientGameObject(RakNet::Packet * packet)
    int clientID;
    bsIn.Read(clientID);
 
-   if (clientID != _clientObject.id)
+   if (clientID != _myObject.id)
    {
       GameObject clientData;
       clientData.Read(packet);
-
-      bsIn.Read((char*)&clientData, sizeof(GameObject));
-
-      _otherClients[clientID] = clientData;
+      _otherObjects[clientID] = clientData;
    }
 }
 
@@ -248,20 +308,56 @@ void Client::onSetClientIDPacket(RakNet::Packet* packet)
 {
    RakNet::BitStream bsIn(packet->data, packet->length, false);
    bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
-   bsIn.Read(_clientObject.id);
-   std::cout << "Set my Client ID to: " << _clientObject.id << std::endl;
+   bsIn.Read(_myObject.id);
+   _myObject.data.colour = GameObject::GetColour(_myObject.id);
+   std::cout << "Set my Client ID to: " << _myObject.id << std::endl;
+}
+
+void Client::onDespawn(RakNet::Packet * packet)
+{
+
+   RakNet::BitStream bsIn(packet->data, packet->length, false);
+   bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+
+   int despawn_id;
+   bsIn.Read(despawn_id);
+   _otherObjects.erase(despawn_id);
 }
 
 void Client::sendClientGameObject()
 {
-   _clientObject.Write(_peerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+   if(_myObject.id != 0)
+      _myObject.Write(_peerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+}
+
+void Client::sendChatMessage(std::string message)
+{
+   RakNet::BitStream bs;
+   bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CHAT_MESSAGE);
+   bs.Write(message);
+   _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+                        RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
 void Client::requestUsername(std::string name)
 {
    RakNet::BitStream bs;
    bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CHANGE_USERNAME);
-   bs.Write(_name);
+   bs.Write(name);
+   _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+                        RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+}
+
+void Client::SpawnBullet()
+{
+   RakNet::BitStream bs;
+   bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_SPAWN_BULLET);
+
+   glm::vec3 spawnPos = _myObject.data.position + _facing;
+
+   bs.Write((char*)&spawnPos, sizeof(glm::vec3));
+   bs.Write((char*)&_facing, sizeof(glm::vec3));
+
    _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
                         RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }

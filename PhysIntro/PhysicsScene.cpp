@@ -146,7 +146,5 @@ bool PhysicsScene::sphere2sphere(PhysicsObj * obj1, PhysicsObj * obj2)
 			return true;
 		}
 	}
-
-	//NOTE: reminder to put a more complete version of this in debug function
 	return false;
 }
