@@ -12,6 +12,13 @@
 
 #include "GameObject.h"
 
+enum Connection
+{
+   C_CONNECTED,
+   C_CONNECTING,
+   C_DISCONNECTED,
+};
+
 class Client : public aie::Application {
 public:
 
@@ -33,7 +40,7 @@ public:
    void sendClientGameObject();
    void sendChatMessage(std::string message);
    void requestUsername(std::string name);
-   void SpawnBullet();
+   void SpawnBullet(glm::vec3 facing, float speed);
 
    void HandleNetworkMessages();
 
@@ -44,14 +51,15 @@ public:
 
 protected:
 
-   RakNet::RakPeerInterface* _peerInterface;
+   RakNet::RakPeerInterface* m_peerInterface;
    const char* IP = "127.0.0.1";
    const unsigned PORT = 5456;
-   int _userID = 0;
+   int m_userID = 0;
    std::string _name = "ANON";
-   std::unordered_map<int, GameObject> _otherObjects;
-   GameObject _myObject;
-   glm::vec3 _facing;
+   std::unordered_map<int, GameObject> m_otherObjects;
+   GameObject m_myObject;
+   glm::vec3 m_facing;
+   Connection m_currentState = C_CONNECTED;
 
 	glm::mat4	m_viewMatrix;
 	glm::mat4	m_projectionMatrix;

@@ -20,28 +20,24 @@
 
 using aie::Gizmos;
 
-Client::Client() {
+Client::Client() { }
 
-}
-
-Client::~Client() {
-}
+Client::~Client() { }
 
 bool Client::startup() {
 	
 	setBackgroundColour(0.25f, 0.25f, 0.25f);
 
-   Client::handleNetworkConnections();
+   handleNetworkConnections();
 
-   _myObject.id = 0;
-   _myObject.data.position = glm::vec3(0, 0, 0);
-   _myObject.data.colour = glm::vec4(1, 0, 0, 1);
+   m_myObject = GameObject();
+   m_myObject.data.colour = glm::vec4(0.4f);
 
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
 
 	// create simple camera transforms
-	m_viewMatrix = glm::lookAt(glm::vec3(10), glm::vec3(0), glm::vec3(0, 1, 0));
+	m_viewMatrix = glm::lookAt(glm::vec3(0, 10, 10), glm::vec3(0), glm::vec3(0, 1, 0));
 	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
 										  getWindowWidth() / (float)getWindowHeight(),
 										  0.1f, 1000.f);
@@ -87,14 +83,34 @@ void Client::update(float deltaTime) {
 
    HandleInputs(deltaTime);
 
+
+
+   ImGui::Text("Game Object");
    ImGui::BeginGroup();
-   ImGui::Text("game object");
-   ImGui::InputFloat3("position", glm::value_ptr(_myObject.data.position));
-   ImGui::ColorEdit3("colour", glm::value_ptr(_myObject.data.colour));
+   ImGui::InputFloat3("position", glm::value_ptr(m_myObject.data.position));
+   ImGui::ColorEdit3("colour", glm::value_ptr(m_myObject.data.colour));
    ImGui::EndGroup();
+   ImGui::Text("Server");
+   switch (m_currentState)
+   {
+   case C_CONNECTED:
+      ImGui::TextColored(ImVec4(0, 1, 0, 1), "Connected!");
+      break;
+   case C_CONNECTING:
+      ImGui::TextColored(ImVec4(1, 1, 0, 1), "Connecting...");
+      break;
+   case C_DISCONNECTED:
+      ImGui::TextColored(ImVec4(1, 0, 0, 1), "Not Connected");
+      if (ImGui::Button("Reconnect?"))
+      {
+         initialiseClientConnection();
+      }
+      break;
+   }
+   
 
    
-   if (_myObject.id != 0)
+   if (m_myObject.id != 0)
    sendClientGameObject();
 
 }
@@ -104,40 +120,48 @@ void Client::HandleInputs(float deltaTime)
    aie::Input* input = aie::Input::getInstance();
    bool stateChanged = false;
 
+   glm::vec2 nface(0);
+
    // directional movement
    if (input->isKeyDown(aie::INPUT_KEY_LEFT))
    {
-      _myObject.data.position.x -= 10.0f * deltaTime;
-      _facing = glm::vec3(-1, 0, 0);
+      m_myObject.data.position.x -= 10.0f * deltaTime;
+      nface.x -= 1;
       stateChanged = true;
    }
    if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
    {
-      _myObject.data.position.x += 10.0f * deltaTime;
-      _facing = glm::vec3(1, 0, 0);
+      m_myObject.data.position.x += 10.0f * deltaTime;
+      nface += 1;
       stateChanged = true;
    }
    if (input->isKeyDown(aie::INPUT_KEY_UP))
    {
-      _myObject.data.position.z -= 10.0f * deltaTime; 
-      _facing = glm::vec3(0, -1, 0);
+      m_myObject.data.position.z -= 10.0f * deltaTime; 
+      nface.y -= 1;
       stateChanged = true;
    }
    if (input->isKeyDown(aie::INPUT_KEY_DOWN))
    {
-      _myObject.data.position.z += 10.0f * deltaTime;
-      _facing = glm::vec3(0, 1, 0);
+      m_myObject.data.position.z += 10.0f * deltaTime;
+      nface.y += 1;
       stateChanged = true;
+   }
+
+   //changes face if 
+   if(nface != glm::vec2(0))
+      m_facing = glm::vec3(nface.x, 0, nface.y);
+
+   if (stateChanged)
+   {
+      sendClientGameObject();
    }
 
    // firing
    if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
    {
-      this->SpawnBullet();
+      this->SpawnBullet(m_facing, 10.f);
    }
-
-   if(stateChanged)
-      sendClientGameObject();
 
    // quit if we press escape
    if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
@@ -186,13 +210,13 @@ void Client::Chat(Client* client)
 void Client::draw() 
 {
    // add own and other spheres
-   Gizmos::addSphere(_myObject.data.position, 1.0f, 32, 32, _myObject.data.colour);
-   for (auto& otherClient : _otherObjects)
+   Gizmos::addSphere(m_myObject.data.position, 1.0f, 32, 32, m_myObject.data.colour);
+   for (auto& otherObject : m_otherObjects)
    {
-      if (otherClient.first >= 1000)
-      { Gizmos::addSphere(otherClient.second.data.position, 0.2f, 8, 8, otherClient.second.data.colour); }
+      if (otherObject.first >= 1000)
+      { Gizmos::addSphere(otherObject.second.data.position, 0.2f, 8, 8, otherObject.second.data.colour); }
       else 
-      { Gizmos::addSphere(otherClient.second.data.position, 1.0f, 32, 32, otherClient.second.data.colour); }
+      { Gizmos::addSphere(otherObject.second.data.position, 1.0f, 32, 32, otherObject.second.data.colour); }
    }
 
 	// wipe the screen to the background colour
@@ -208,22 +232,24 @@ void Client::draw()
 
 void Client::handleNetworkConnections()
 {
-   _peerInterface = RakNet::RakPeerInterface::GetInstance();
+   m_peerInterface = RakNet::RakPeerInterface::GetInstance();
    initialiseClientConnection();
 }
 
 void Client::initialiseClientConnection()
 {
+   m_currentState = C_CONNECTING;
    RakNet::SocketDescriptor sd;
 
-   _peerInterface->Startup(1, &sd, 1);
+   m_peerInterface->Startup(1, &sd, 1);
 
    std::cout << "connecting to server at: " << IP << std::endl;
 
-   RakNet::ConnectionAttemptResult result = _peerInterface->Connect(IP, PORT, nullptr, 0);
+   RakNet::ConnectionAttemptResult result = m_peerInterface->Connect(IP, PORT, nullptr, 0);
 
    if (result != RakNet::CONNECTION_ATTEMPT_STARTED)
    {
+      m_currentState = C_DISCONNECTED;
       std::cout << "Unable to start connection, Error number: " << result << std::endl;
    }
 }
@@ -233,9 +259,9 @@ void Client::HandleNetworkMessages()
 
    RakNet::Packet* packet;
 
-   for (packet = _peerInterface->Receive(); packet;
-             _peerInterface->DeallocatePacket(packet),
-             packet = _peerInterface->Receive())
+   for (packet = m_peerInterface->Receive(); packet;
+             m_peerInterface->DeallocatePacket(packet),
+             packet = m_peerInterface->Receive())
    {
       switch (packet->data[0])
       {
@@ -247,18 +273,23 @@ void Client::HandleNetworkMessages()
          break;
       case ID_CONNECTION_REQUEST_ACCEPTED:
          std::cout << "Our connection request has been accepted.\n";
+         m_currentState = C_CONNECTED;
          break;
       case ID_CONNECTION_ATTEMPT_FAILED:
          std::cout << "Our connection attempt has failed. \n";
+         m_currentState = C_DISCONNECTED;
          break;
       case ID_NO_FREE_INCOMING_CONNECTIONS:
          std::cout << "The server is full.\n";
+         m_currentState = C_DISCONNECTED;
          break;
       case ID_DISCONNECTION_NOTIFICATION:
          std::cout << "We have been disconnected.\n";
+         m_currentState = C_DISCONNECTED;
          break; 
       case ID_CONNECTION_LOST:
          std::cout << "We have lost connection.\n";
+         m_currentState = C_DISCONNECTED;
          break; 
       case ID_SERVER_SET_CLIENT_ID:
          onSetClientIDPacket(packet);
@@ -296,11 +327,11 @@ void Client::recieveClientGameObject(RakNet::Packet * packet)
    int clientID;
    bsIn.Read(clientID);
 
-   if (clientID != _myObject.id)
+   if (clientID != m_myObject.id)
    {
       GameObject clientData;
       clientData.Read(packet);
-      _otherObjects[clientID] = clientData;
+      m_otherObjects[clientID] = clientData;
    }
 }
 
@@ -308,9 +339,9 @@ void Client::onSetClientIDPacket(RakNet::Packet* packet)
 {
    RakNet::BitStream bsIn(packet->data, packet->length, false);
    bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
-   bsIn.Read(_myObject.id);
-   _myObject.data.colour = GameObject::GetColour(_myObject.id);
-   std::cout << "Set my Client ID to: " << _myObject.id << std::endl;
+   bsIn.Read(m_myObject.id);
+   m_myObject.data.colour = GameObject::GetColour(m_myObject.id);
+   std::cout << "Set my Client ID to: " << m_myObject.id << std::endl;
 }
 
 void Client::onDespawn(RakNet::Packet * packet)
@@ -321,13 +352,13 @@ void Client::onDespawn(RakNet::Packet * packet)
 
    int despawn_id;
    bsIn.Read(despawn_id);
-   _otherObjects.erase(despawn_id);
+   m_otherObjects.erase(despawn_id);
 }
 
 void Client::sendClientGameObject()
 {
-   if(_myObject.id != 0)
-      _myObject.Write(_peerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+   if(m_myObject.id != 0)
+      m_myObject.Write(m_peerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
 void Client::sendChatMessage(std::string message)
@@ -335,7 +366,7 @@ void Client::sendChatMessage(std::string message)
    RakNet::BitStream bs;
    bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CHAT_MESSAGE);
    bs.Write(message);
-   _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+   m_peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
                         RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
@@ -344,21 +375,22 @@ void Client::requestUsername(std::string name)
    RakNet::BitStream bs;
    bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CHANGE_USERNAME);
    bs.Write(name);
-   _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+   m_peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
                         RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
-void Client::SpawnBullet()
+void Client::SpawnBullet(glm::vec3 facing, float speed)
 {
    RakNet::BitStream bs;
    bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_SPAWN_BULLET);
 
-   glm::vec3 spawnPos = _myObject.data.position + _facing;
+   glm::vec3 spawnPos = m_myObject.data.position + facing;
+   glm::vec3 bulletVel = facing * speed;
 
    bs.Write((char*)&spawnPos, sizeof(glm::vec3));
-   bs.Write((char*)&_facing, sizeof(glm::vec3));
+   bs.Write((char*)&bulletVel, sizeof(glm::vec3));
 
-   _peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+   m_peerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
                         RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
