@@ -1,6 +1,10 @@
 
+#include "Server.h"
+
+Server server;
+
 int main()
 {
-	
-	return 0;
+   server.Startup();
+   return 0;
 }
