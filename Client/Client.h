@@ -9,6 +9,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <deque>
 
 #include "GameObject.h"
 
@@ -29,17 +30,16 @@ public:
 	virtual void shutdown();
 
 	virtual void update(float deltaTime);
+   void DrawGUI(float deltaTime);
 	virtual void draw();
    void HandleInputs(float deltaTime);
 
-   static void Chat(Client* client);
+   void InitialiseClientConnection();
+   void HandleNetworkConnections();
 
-   void initialiseClientConnection();
-   void handleNetworkConnections();
-
-   void sendClientGameObject();
-   void sendChatMessage(std::string message);
-   void requestUsername(std::string name);
+   void SendClientGameObject();
+   void SendChatMessage(std::string message);
+   void RequestUsername(std::string name);
    void SpawnBullet(glm::vec3 facing, float speed);
 
    void HandleNetworkMessages();
@@ -52,13 +52,16 @@ public:
 protected:
 
    RakNet::RakPeerInterface* m_peerInterface;
+   //ImGuiIO io;
    const char* IP = "127.0.0.1";
    const unsigned PORT = 5456;
    int m_userID = 0;
-   std::string _name = "ANON";
+   char m_name[8] = "ANON";
+   std::deque<std::string> m_chatlog;
    std::unordered_map<int, GameObject> m_otherObjects;
    GameObject m_myObject;
-   glm::vec3 m_facing;
+   float m_speed = 10.0f;
+   glm::vec3 m_facing = glm::vec3(0);
    Connection m_currentState = C_CONNECTED;
 
 	glm::mat4	m_viewMatrix;

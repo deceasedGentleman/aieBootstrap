@@ -20,10 +20,16 @@ public:
    void ChangeClientName(RakNet::Packet * packet);
    void OnSpawnBullet(RakNet::Packet * packet);
 
+   float GetElapsedTime();
+
+
 protected:
-   std::map<int, GameObject> _gameObjects;
-   std::map<RakNet::SystemAddress, std::string> _usernameForAddress;
-   RakNet::RakPeerInterface* _peerInterface = nullptr;
+   LARGE_INTEGER LastTime;
+
+   std::map<int, GameObject> m_gameObjects;
+   std::map<RakNet::SystemAddress, std::string> m_usernameForAddress;
+   RakNet::RakPeerInterface* m_peerInterface = nullptr;
    const unsigned int short PORT = 5456;
+
 };
 

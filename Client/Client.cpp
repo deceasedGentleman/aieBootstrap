@@ -18,6 +18,14 @@
 #include <iostream>
 #include <thread>
 
+float m_health = 100;
+
+struct Score
+{
+   int K;
+   int D;
+} m_score;
+
 using aie::Gizmos;
 
 Client::Client() { }
@@ -28,7 +36,7 @@ bool Client::startup() {
 	
 	setBackgroundColour(0.25f, 0.25f, 0.25f);
 
-   handleNetworkConnections();
+   HandleNetworkConnections();
 
    m_myObject = GameObject();
    m_myObject.data.colour = glm::vec4(0.4f);
@@ -39,10 +47,8 @@ bool Client::startup() {
 	// create simple camera transforms
 	m_viewMatrix = glm::lookAt(glm::vec3(0, 10, 10), glm::vec3(0), glm::vec3(0, 1, 0));
 	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
-										  getWindowWidth() / (float)getWindowHeight(),
+										  (float)getWindowWidth() / (float)getWindowHeight(),
 										  0.1f, 1000.f);
-
-   //std::thread chatThread(Chat, this);
 
 	return true;
 }
@@ -60,37 +66,27 @@ void Client::update(float deltaTime) {
 	// wipe the gizmos clean for this frame
 	Gizmos::clear();
 
-   ImGui::Text("Networking test");
+   // handle the ImGui code
+   DrawGUI(deltaTime);
+
+   // parse any messages from the server
    HandleNetworkMessages();
 
-   // messaging removed for the time being
-/*
-   ImGui::BeginChild("Messaging");
-   if (ImGui::InputText("Username", _name.c_str, 8, ImGuiInputTextFlags_EnterReturnsTrue))
+   // handle game inputs if ImGui isn't waiting for typed text
+   ImGuiIO io = ImGui::GetIO();
+   if (!io.WantTextInput)
    {
-
+      HandleInputs(deltaTime);
    }
-      ImGui::BeginChild("ChatLog", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
-      for (int i = 0; i < 100; i++)
-      {
-         ImGui::Text("NAME: message");
-      }
-      ImGui::EndChild();
-   ImGui::SameLine();
-   ImGui::te
-   if(ImGui::Button(""))
-*/
+   // updates state to server if we have a valid ID
+   if (m_myObject.id != 0)
+      SendClientGameObject();
+}
 
-   HandleInputs(deltaTime);
+void Client::DrawGUI(float deltaTime)
+{
 
-
-
-   ImGui::Text("Game Object");
-   ImGui::BeginGroup();
-   ImGui::InputFloat3("position", glm::value_ptr(m_myObject.data.position));
-   ImGui::ColorEdit3("colour", glm::value_ptr(m_myObject.data.colour));
-   ImGui::EndGroup();
-   ImGui::Text("Server");
+   ImGui::Text("Server status: "); ImGui::SameLine();
    switch (m_currentState)
    {
    case C_CONNECTED:
@@ -101,18 +97,55 @@ void Client::update(float deltaTime) {
       break;
    case C_DISCONNECTED:
       ImGui::TextColored(ImVec4(1, 0, 0, 1), "Not Connected");
+      ImGui::SameLine();
       if (ImGui::Button("Reconnect?"))
       {
-         initialiseClientConnection();
+         InitialiseClientConnection();
       }
       break;
    }
-   
-
-   
-   if (m_myObject.id != 0)
-   sendClientGameObject();
-
+   if (ImGui::CollapsingHeader("Chat Program"))
+   {
+   static std::vector<std::string> chatLog;
+   ImGui::BeginChild("Chat Program", ImVec2(ImGui::GetWindowContentRegionWidth(), 300), true);
+      ImGui::BeginChild("ChatLog", ImGui::GetContentRegionAvail(), true);
+         ImGui::Separator();
+         for (int i = 0; i < chatLog.size(); i++)
+         {
+            ImGui::TextWrapped(chatLog[i].c_str()); //outputs chat log
+            ImGui::Separator();
+         }
+      ImGui::EndChild();
+      static bool nameChosen = false;
+      if (!nameChosen)
+      {
+         ImGui::BeginGroup();
+            if (ImGui::InputText("Username", m_name, 8, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::Button("Set Name"))
+            {
+               std::cout << "username set to " << m_name << std::endl;
+               Client::RequestUsername(m_name);
+               nameChosen = true;
+            }
+         ImGui::EndGroup();
+      } else
+      {
+         ImGui::BeginGroup();
+            char tbuf[64] = "";
+            if (ImGui::InputText("Chat Input", tbuf, 64, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::Button("Send"))
+            {
+               Client::SendChatMessage(tbuf);
+            }
+         ImGui::EndGroup();
+      } 
+   ImGui::EndChild();
+   }
+   if (ImGui::CollapsingHeader("Game Object"))
+   {
+      ImGui::BeginGroup();
+         ImGui::InputFloat3("position", glm::value_ptr(m_myObject.data.position));
+         ImGui::ColorEdit3("colour", glm::value_ptr(m_myObject.data.colour));
+      ImGui::EndGroup();
+   }
 }
 
 void Client::HandleInputs(float deltaTime)
@@ -120,47 +153,43 @@ void Client::HandleInputs(float deltaTime)
    aie::Input* input = aie::Input::getInstance();
    bool stateChanged = false;
 
-   glm::vec2 nface(0);
+   glm::vec3 dface(0);
 
    // directional movement
-   if (input->isKeyDown(aie::INPUT_KEY_LEFT))
+   if (input->isKeyDown(aie::INPUT_KEY_UP) || input->isKeyDown(aie::INPUT_KEY_W))
    {
-      m_myObject.data.position.x -= 10.0f * deltaTime;
-      nface.x -= 1;
+      m_myObject.data.position.z -= m_speed * deltaTime;
+      dface.y -= 1;
       stateChanged = true;
    }
-   if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
+   if (input->isKeyDown(aie::INPUT_KEY_DOWN) || input->isKeyDown(aie::INPUT_KEY_S))
    {
-      m_myObject.data.position.x += 10.0f * deltaTime;
-      nface += 1;
+      m_myObject.data.position.z += m_speed * deltaTime;
+      dface.y += 1;
       stateChanged = true;
    }
-   if (input->isKeyDown(aie::INPUT_KEY_UP))
+   if (input->isKeyDown(aie::INPUT_KEY_LEFT) || input->isKeyDown(aie::INPUT_KEY_A))
    {
-      m_myObject.data.position.z -= 10.0f * deltaTime; 
-      nface.y -= 1;
+      m_myObject.data.position.x -= m_speed * deltaTime;
+      dface.x -= 1;
       stateChanged = true;
    }
-   if (input->isKeyDown(aie::INPUT_KEY_DOWN))
+   if (input->isKeyDown(aie::INPUT_KEY_RIGHT)|| input->isKeyDown(aie::INPUT_KEY_D))
    {
-      m_myObject.data.position.z += 10.0f * deltaTime;
-      nface.y += 1;
+      m_myObject.data.position.x += m_speed * deltaTime;
+      dface += 1;
       stateChanged = true;
    }
-
-   //changes face if 
-   if(nface != glm::vec2(0))
-      m_facing = glm::vec3(nface.x, 0, nface.y);
-
    if (stateChanged)
    {
-      sendClientGameObject();
+      m_facing = dface;
+      SendClientGameObject();
    }
 
    // firing
    if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
    {
-      this->SpawnBullet(m_facing, 10.f);
+      this->SpawnBullet(m_facing, m_speed * 1.5);
    }
 
    // quit if we press escape
@@ -168,44 +197,6 @@ void Client::HandleInputs(float deltaTime)
       quit();
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// work on chat functionality stalled due to me not understanding strings
-///////////////////////////////////////////////////////////////////////////////
-void Client::Chat(Client* client)
-{
-   while (true)
-   {
-      std::string input;
-      std::getline(std::cin, input, ' ');
-      if (input == "help")
-      {
-         std::cin.ignore();
-         std::cout << "available commands are:\n"
-            << "help: lists commands\n"
-            << "say [text]: sends a text message to the other clients\n"
-            << "name [text]: changes your client name to [text]\n"
-            << std::endl;
-      } 
-      else if (input == "say")
-      {
-         if (std::getline(std::cin, input))
-         {
-            client->sendChatMessage(input);
-         }
-      }
-      else if (input == "name")
-      {
-         if (std::getline(std::cin, input))
-         {
-            client->requestUsername(input);
-         }
-      }
-      else
-      {
-         std::cout << "command not recognised, type 'help' for a list of options" << std::endl;
-      }
-   }
-}
 
 void Client::draw() 
 {
@@ -230,13 +221,13 @@ void Client::draw()
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
 }
 
-void Client::handleNetworkConnections()
+void Client::HandleNetworkConnections()
 {
    m_peerInterface = RakNet::RakPeerInterface::GetInstance();
-   initialiseClientConnection();
+   InitialiseClientConnection();
 }
 
-void Client::initialiseClientConnection()
+void Client::InitialiseClientConnection()
 {
    m_currentState = C_CONNECTING;
    RakNet::SocketDescriptor sd;
@@ -274,6 +265,7 @@ void Client::HandleNetworkMessages()
       case ID_CONNECTION_REQUEST_ACCEPTED:
          std::cout << "Our connection request has been accepted.\n";
          m_currentState = C_CONNECTED;
+         
          break;
       case ID_CONNECTION_ATTEMPT_FAILED:
          std::cout << "Our connection attempt has failed. \n";
@@ -355,13 +347,13 @@ void Client::onDespawn(RakNet::Packet * packet)
    m_otherObjects.erase(despawn_id);
 }
 
-void Client::sendClientGameObject()
+void Client::SendClientGameObject()
 {
    if(m_myObject.id != 0)
       m_myObject.Write(m_peerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
-void Client::sendChatMessage(std::string message)
+void Client::SendChatMessage(std::string message)
 {
    RakNet::BitStream bs;
    bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CHAT_MESSAGE);
@@ -370,7 +362,7 @@ void Client::sendChatMessage(std::string message)
                         RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
-void Client::requestUsername(std::string name)
+void Client::RequestUsername(std::string name)
 {
    RakNet::BitStream bs;
    bs.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CHANGE_USERNAME);

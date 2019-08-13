@@ -4,14 +4,6 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
-enum TransformAxis
-{
-   LEFT,
-   FORWARD,
-   UP,
-   POSITION
-};
-
 class Camera
 {
 public:
