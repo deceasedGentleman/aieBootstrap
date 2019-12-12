@@ -23,8 +23,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client", "Client\Client.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Server", "Server\Server.vcxproj", "{7D0549B9-95F3-4D0C-AAE0-87071A6D5C3E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "networking", "networking", "{4979075B-B7FA-4BE6-9B28-CCAC69EC7DC7}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -72,10 +70,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{EA21C4DF-E331-4FCF-8513-14A3F56B77F3} = {4979075B-B7FA-4BE6-9B28-CCAC69EC7DC7}
-		{7D0549B9-95F3-4D0C-AAE0-87071A6D5C3E} = {4979075B-B7FA-4BE6-9B28-CCAC69EC7DC7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {405F3EAA-9526-486D-9B0B-7ACB3D10DCF0}
