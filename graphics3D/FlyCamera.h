@@ -24,5 +24,6 @@ protected:
    float m_MouseSensitivity = 0.3f;
 public:
    float m_XAngle = 0, m_YAngle = 0;
+   glm::vec3 rotation;
 };
 

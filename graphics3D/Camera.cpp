@@ -42,24 +42,24 @@ mat4 Camera::getWorldTransform()
 void Camera::setLookAt(glm::vec3 from, glm::vec3 to, glm::vec3 up)
 {
    m_viewMatrix = lookAt(from, to, up);
-   updateWorld();
+   m_worldTransform = glm::inverse(m_viewMatrix);
 }
 
 void Camera::setPosition(glm::vec3 position)
 {
    m_worldTransform[3] = glm::vec4(position, m_worldTransform[3].w);
-   updateView();
+   m_viewMatrix = glm::inverse(m_worldTransform);
 }
 
 void Camera::setWorldTransform(glm::mat4 WT)
 {
    m_worldTransform = WT;
-   updateView();
+   m_viewMatrix = glm::inverse(m_worldTransform);
 }
 
 glm::vec3 Camera::getPosition()
 {
-   return glm::vec3(getWorldTransform()[3]);
+   return glm::vec3(m_worldTransform[3]);
 }
 
 /// giving up on the maths for the time, going to hard code the rotation in
@@ -90,7 +90,7 @@ glm::vec3 Camera::getPosition()
 
 glm::vec3 Camera::getRow(unsigned int row)
 {
-   return glm::vec3(getWorldTransform()[row]);
+   return glm::vec3(m_worldTransform[row]);
 }
 
 glm::mat4 Camera::getProjectionView()
@@ -98,12 +98,7 @@ glm::mat4 Camera::getProjectionView()
    return m_projectionMatrix * m_viewMatrix;
 }
 
-void Camera::updateWorld()
-{
-   m_worldTransform = glm::inverse(m_viewMatrix);
-}
-
 void Camera::updateView()
 {
-   m_viewMatrix = glm::inverse(m_worldTransform);
+    m_viewMatrix = glm::inverse(m_worldTransform);
 }
