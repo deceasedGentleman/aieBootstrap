@@ -1,6 +1,6 @@
 #pragma once
 #include "Application.h"
-#include "Camera.h"
+#include "FlyCamera.h"
 
 class graphics3DApp : public aie::Application {
 public:
@@ -14,6 +14,7 @@ public:
 	virtual void update(float deltaTime);
 	virtual void draw();
 private:
-   Camera* m_camera;
+   FlyCamera* m_camera;
    bool cursorLock;
+   bool hack;
 };
