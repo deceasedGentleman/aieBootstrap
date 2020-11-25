@@ -1,4 +1,5 @@
 #define GLM_ENABLE_EXPERIMENTAL
+#define GLM_SWIZZLE
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
@@ -37,7 +38,10 @@ graphics3DApp::~graphics3DApp()
 
 bool graphics3DApp::startup()
 {
-    hack = true;
+
+    glm::vec3 pos = { 1,2,3 };
+    printf("test: %d, %d", pos.x, pos.y);
+
     cursorLock = false;
     glfwSetInputMode(m_window, GLFW_CURSOR, cursorLock ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     m_camera = new FlyCamera(glm::radians(45.0f), float(16 / 9),
@@ -57,10 +61,6 @@ void graphics3DApp::shutdown()
 
 void graphics3DApp::update(float deltaTime)
 {
-    if (hack)
-    {
-        hack = false;
-    }
     //find the center of the screen
     glm::vec2 mid = { getWindowWidth() / 2, getWindowHeight() / 2 };
 
@@ -79,6 +79,7 @@ void graphics3DApp::update(float deltaTime)
             glm::vec3(-10, 0, -10 + i),
             i == 10 ? white : black);
     }
+
 
     //draw a cross with radius 'l' in the center of the screen
     float l = 4.0f;
@@ -114,10 +115,9 @@ void graphics3DApp::update(float deltaTime)
         //update the camera's transform
         m_camera->update(deltaTime, input);
     }
-
     /*DBOUT("pos: (" << float(m_camera->getPosition().x) << ", " << m_camera->getPosition().y "), ");*/
     DBOUT("Camera: (" << m_camera->m_XAngle << "," << m_camera->m_YAngle << ")\n");
-    printf("Camera: ( %d, %d )", m_camera->m_XAngle, m_camera->m_YAngle)
+    printf("Camera: ( %d, %d )", m_camera->m_XAngle, m_camera->m_YAngle);
 }
 
 void graphics3DApp::draw()
